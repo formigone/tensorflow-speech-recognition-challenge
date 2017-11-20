@@ -2,21 +2,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import signal
 from scipy.io import wavfile
+from util.labels import label2int, int2label
 
 
-def parse_data_file(file_path, classes):
+def parse_data_file(file_path):
     file = open(file_path, 'r')
     for line in file:
         key, wav = line.split()
-        if not classes.get(key):
-            classes[key] = len(classes)
         path = 'data_speech_commands_v0.01/' + key + '/' + wav
         sr, sound = wavfile.read(path)
         spec = log_specgram(sound, sr)
-        print(spec.shape)
         flat = spec.reshape((1, spec.shape[0] * spec.shape[1]))
-        print(flat.shape)
-        print(str(classes[key]) + ',' + ','.join(np.char.mod('%f', flat[0])))
+        print(str(label2int(key)) + ',' + ','.join(np.char.mod('%f', flat[0])))
     file.close()
 
 
@@ -33,17 +30,4 @@ def log_specgram(audio, sample_rate, window_size=20,
     return np.log(spec.T.astype(np.float32) + eps)
 
 
-classes = {
-    'up': 0,
-    'down': 1,
-    'left': 2,
-    'right': 3,
-    'go': 4,
-    'stop': 5,
-    'yes': 6,
-    'no': 7,
-    'on': 8,
-    'off': 9
-}
-
-parse_data_file('validation-set.text', classes)
+# parse_data_file('training-set.text')
