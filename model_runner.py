@@ -3,7 +3,7 @@ import sys
 
 import tensorflow as tf
 from models import simple_cnn
-from util.data import gen_input_fn
+from util.data import gen_input_fn_csv
 
 FLAGS = None
 LEARNING_RATE = 0.001
@@ -22,13 +22,13 @@ def main(args):
         print('Training')
         print('--------')
 
-        model.train(input_fn=gen_input_fn(FLAGS.input_file, num_epochs=5))
+        model.train(input_fn=gen_input_fn_csv(FLAGS.input_file, num_epochs=5))
     elif FLAGS.mode == 'validate':
         print('----------')
         print('Validating')
         print('----------')
 
-        predictions = model.predict(input_fn=gen_input_fn(FLAGS.input_file))
+        predictions = model.predict(input_fn=gen_input_fn_csv(FLAGS.input_file))
         for i, p in enumerate(predictions):
             print("Prediction %s: %s" % (i + 1, p["ages"]))
     else:
