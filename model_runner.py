@@ -37,7 +37,7 @@ def main(args):
 
         predictions = model.predict(input_fn=gen_input_fn_csv(FLAGS.input_file, num_epochs=1, target_dtype=np.float32))
         for i, p in enumerate(predictions):
-            print("Prediction %s: %s" % (i + 1, p["predictions"]))
+            print("Prediction %s: %s" % (i + 1, p["classes"]))
     else:
         raise ValueError('Invalid mode')
 
