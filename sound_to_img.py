@@ -63,11 +63,45 @@ def log_specgram(audio, sample_rate, window_size=20,
     return np.log(spec.T.astype(np.float32) + eps)
 
 
+def sample_specgram(filename):
+    file = open(filename, 'r')
+    for line in file:
+        key, wav = line.split()
+        path = 'data_speech_commands_v0.01/' + key + '/' + wav
+        sr, sound = wavfile.read(path)
+        spec = log_specgram(sound, sr)
+        plt.imshow(spec)
+        plt.show()
+        print(spec.shape)
+        flat = spec.reshape((1, spec.shape[0] * spec.shape[1]))
+        file.close()
+        return
+
+
+def graph_specgrams(filename, save_dir, w, h):
+    file = open(filename, 'r')
+    i = 0
+    for line in file:
+        line = np.array([float(num) for num in line.split(',')])
+        spec = np.reshape(line[:-1], (w, h))
+        plt.imsave(save_dir + '/' + str(i) + '.png', spec)
+        i += 1
+    file.close()
+
+
 # parse_data_file('training-set.text')
 parser = argparse.ArgumentParser()
 parser.add_argument('--input_list', type=str, metavar='', default=None, help='Path to raw list of files and labels')
 parser.add_argument('--offset', type=int, metavar='', default=0, help='Offset to parse inputs from')
 parser.add_argument('--max', type=int, metavar='', default=5000, help='Max inputs to parse')
+parser.add_argument('--debug', type=int, metavar='', default=0, help='Either 0 or 1')
+parser.add_argument('--graph', type=int, metavar='', default=0, help='Either 0 or 1')
+parser.add_argument('--graph_save_dir', type=str, metavar='', default='', help='Either 0 or 1')
 FLAGS, unparsed = parser.parse_known_args()
 
-parse_data_file(FLAGS.input_list, FLAGS.offset, FLAGS.max)
+if FLAGS.debug:
+    sample_specgram(FLAGS.input_list)
+elif FLAGS.graph:
+    graph_specgrams(FLAGS.input_list, FLAGS.graph_save_dir, 99, 161)
+else:
+    parse_data_file(FLAGS.input_list, FLAGS.offset, FLAGS.max)

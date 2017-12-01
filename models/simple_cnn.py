@@ -3,8 +3,7 @@ import tensorflow as tf
 
 def model_fn(features, labels, mode, params):
     input = tf.reshape(features['x'], [-1, 99, 161, 1])
-    # input = tf.reshape(features['x'], [-1, 250, 250, 1])
-    # tf.summary.image('input', input)
+    tf.summary.image('input', input, max_outputs=3)
 
     conv_1 = tf.layers.conv2d(input, filters=32, kernel_size=3, activation=tf.nn.relu, name='conv_1')
     # output: ((n + 2p - f) / s) + 1
@@ -24,8 +23,8 @@ def model_fn(features, labels, mode, params):
     logits = tf.layers.dense(dropout, units=10, name='logits')
 
     predictions = {
-        'classes': tf.argmax(logits, axis=1),
-        'probabilities': tf.nn.softmax(logits, name='softmax')
+        'classes': tf.argmax(logits, axis=1, name='prediction_classes'),
+        'probabilities': tf.nn.softmax(logits, name='prediction_softmax')
     }
 
     if mode == tf.estimator.ModeKeys.PREDICT:
@@ -38,9 +37,16 @@ def model_fn(features, labels, mode, params):
     optimizer = tf.train.GradientDescentOptimizer(learning_rate=params['learning_rate'])
     train_op = optimizer.minimize(loss=loss, global_step=tf.train.get_global_step())
     eval_metric_ops = {
-        #'rmse': tf.metrics.root_mean_squared_error(tf.cast(labels, tf.float32), predictions),
+        # 'rmse': tf.metrics.root_mean_squared_error(tf.cast(labels, tf.float32), predictions),
         'accuracy': tf.metrics.accuracy(labels=labels, predictions=predictions['classes'])
     }
+
+    # print(logits)
+    # print(labels)
+    # print(predictions['classes'])
+    # print(eval_metric_ops['accuracy'])
+
+    tf.summary.scalar('accuracy', eval_metric_ops['accuracy'][1])
 
     return tf.estimator.EstimatorSpec(
         mode=mode,
