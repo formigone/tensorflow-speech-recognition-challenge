@@ -8,17 +8,20 @@ from util.data import gen_input_fn_csv
 
 FLAGS = None
 LEARNING_RATE = 1E-6
+DROPOUT_RATE = 0.4
 tf.logging.set_verbosity(tf.logging.DEBUG)
 
 
 def main(args):
     model_params = {
-        'learning_rate': LEARNING_RATE
+        'learning_rate': LEARNING_RATE,
+        'dropout_rate': DROPOUT_RATE
     }
 
     model = tf.estimator.Estimator(model_dir=FLAGS.model_dir, model_fn=simple_cnn.model_fn, params=model_params)
+    model.train(input_fn=gen_input_fn_csv(FLAGS.input_file, num_epochs=500, target_dtype=np.float32))
 
-    if FLAGS.mode == 'train':
+    if False and FLAGS.mode == 'train':
         for i in range(100):
             print('--------')
             print('Training')
