@@ -6,12 +6,6 @@ def model_fn(features, labels, mode, params):
     Network stats:
     | layer    | output shape   | parameters
     +----------+----------------+--------------
-    | conv1    | (97, 159, 32)  | 320
-    | pool1    | (97, 159, 32)  | 0
-    | conv2    | (46, 77, 64)   | 576
-    | pool2    | (23, 38, 64)   | 0
-    | conv3    | (21, 36, 128)  | 1,152
-    | pool3    | (10, 18, 128)  | 0
     | conv4    | (8, 16, 512)   | 4,608
     | pool4    | (4, 8, 512)    | 0
     | flat     | (16384)        | 0
@@ -33,37 +27,45 @@ def model_fn(features, labels, mode, params):
     # output: n / 2
 
     # (99, 161, 1)
-    conv1 = tf.layers.conv2d(input, filters=32, kernel_size=3, activation=tf.nn.relu, name='conv1')
-    # (97, 159, 32)
-    pool1 = tf.layers.max_pooling2d(conv1, pool_size=[2, 2], strides=2, name='pool1')
-    # (48, 79, 32)
-    tf.summary.image('pool1', pool1[:, :, :, 0:1])
-
-    conv2 = tf.layers.conv2d(pool1, filters=64, kernel_size=3, activation=tf.nn.relu, name='conv2')
-    # (46, 77, 64)
+    conv1 = tf.layers.conv2d(input, filters=64, kernel_size=3, padding='same', activation=tf.nn.relu, name='conv1')
+    # (99, 161, 64)
+    conv2 = tf.layers.conv2d(conv1, filters=64, kernel_size=3, padding='same', activation=tf.nn.relu, name='conv2')
+    # (99, 161, 64)
     pool2 = tf.layers.max_pooling2d(conv2, pool_size=[2, 2], strides=2, name='pool2')
-    # (23, 38, 64)
+    # (49, 80, 64)
     tf.summary.image('pool2', pool2[:, :, :, 0:1])
 
-    conv3 = tf.layers.conv2d(pool2, filters=128, kernel_size=3, activation=tf.nn.relu, name='conv3')
-    # (21, 36, 128)
-    pool3 = tf.layers.max_pooling2d(conv3, pool_size=[2, 2], strides=2, name='pool3')
-    # (10, 18, 128)
-    tf.summary.image('pool3', pool3[:, :, :, 0:1])
-
-    conv4 = tf.layers.conv2d(pool3, filters=512, kernel_size=3, activation=tf.nn.relu, name='conv4')
-    # (8, 16, 512)
+    conv3 = tf.layers.conv2d(pool2, filters=128, kernel_size=3, padding='same', activation=tf.nn.relu, name='conv3')
+    # (49, 80, 128)
+    conv4 = tf.layers.conv2d(conv3, filters=128, kernel_size=3, padding='same', activation=tf.nn.relu, name='conv4')
+    # (49, 80, 128)
     pool4 = tf.layers.max_pooling2d(conv4, pool_size=[2, 2], strides=2, name='pool4')
-    # (4, 8, 512)
+    # (24, 40, 128)
     tf.summary.image('pool4', pool4[:, :, :, 0:1])
 
-    pool4_flat = tf.reshape(pool4, [-1, 4 * 8 * 512], name='pool4_flat')
-    # (16384)
-    dense5 = tf.layers.dense(pool4_flat, units=128, activation=tf.nn.relu, name='dense5')
-    # (128)
-    dense6 = tf.layers.dense(dense5, units=64, activation=tf.nn.relu, name='dense6')
-    # (64)
-    dropout = tf.layers.dropout(dense6, rate=params['dropout_rate'], training=mode == tf.estimator.ModeKeys.TRAIN, name='dropout')
+    conv5 = tf.layers.conv2d(pool4, filters=256, kernel_size=3, padding='same', activation=tf.nn.relu, name='conv5')
+    # (24, 40, 256)
+    conv6 = tf.layers.conv2d(conv5, filters=256, kernel_size=3, padding='same', activation=tf.nn.relu, name='conv6')
+    # (24, 40, 256)
+    pool6 = tf.layers.max_pooling2d(conv6, pool_size=[2, 2], strides=2, name='pool6')
+    # (12, 20, 256)
+    tf.summary.image('pool6', pool6[:, :, :, 0:1])
+
+    conv7 = tf.layers.conv2d(pool6, filters=512, kernel_size=3, padding='same', activation=tf.nn.relu, name='conv7')
+    # (12, 20, 512)
+    conv8 = tf.layers.conv2d(conv7, filters=512, kernel_size=3, padding='same', activation=tf.nn.relu, name='conv8')
+    # (12, 20, 512)
+    pool8 = tf.layers.max_pooling2d(conv8, pool_size=[2, 2], strides=2, name='pool8')
+    # (6, 10, 512)
+    tf.summary.image('pool8', pool8[:, :, :, 0:1])
+
+    pool8_flat = tf.reshape(pool8, [-1, 6 * 10 * 512], name='pool8_flat')
+    # (30720)
+    dense9 = tf.layers.dense(pool8_flat, units=512, activation=tf.nn.relu, name='dense9')
+    # (512)
+    dense10 = tf.layers.dense(dense9, units=512, activation=tf.nn.relu, name='dense10')
+    # (512)
+    dropout = tf.layers.dropout(dense10, rate=params['dropout_rate'], training=mode == tf.estimator.ModeKeys.TRAIN, name='dropout')
 
     logits = tf.layers.dense(dropout, units=params['output_classes'], name='logits')
 

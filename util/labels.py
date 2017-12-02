@@ -1,14 +1,14 @@
 classes = [
-    'up',
-    'down',
-    'left',
-    'right',
-    'go',
-    'stop',
-    'yes',
-    'no',
-    'on',
-    'off',
+    'up',      # 0
+    'down',    # 1
+    'left',    # 2
+    'right',   # 3
+    'go',      # 4
+    'stop',    # 5
+    'yes',     # 6
+    'no',      # 7
+    'on',      # 8
+    'off',     # 9
 ]
 
 label_key_map = {k: v for v, k in enumerate(classes)}
