@@ -2,23 +2,68 @@ import tensorflow as tf
 
 
 def model_fn(features, labels, mode, params):
+    '''
+    Network stats:
+    | layer    | output shape   | parameters
+    +----------+----------------+--------------
+    | conv1    | (97, 159, 32)  | 320
+    | pool1    | (97, 159, 32)  | 0
+    | conv2    | (46, 77, 64)   | 576
+    | pool2    | (23, 38, 64)   | 0
+    | conv3    | (21, 36, 128)  | 1,152
+    | pool3    | (10, 18, 128)  | 0
+    | conv4    | (8, 16, 512)   | 4,608
+    | pool4    | (4, 8, 512)    | 0
+    | flat     | (16384)        | 0
+    | dense4   | (128)          | 2,097,280
+    | dense5   | (64)           | 8,256
+    | softmax  | (10)           | 650
+    \ TOTAL    |                | 2,112,842
+
+    :param features:
+    :param labels:
+    :param mode:
+    :param params:
+    :return:
+    '''
     input = tf.reshape(features['x'], [-1, 99, 161, 1])
-    tf.summary.image('input', input, max_outputs=3)
+    tf.summary.image('input', input)
 
-    conv_1 = tf.layers.conv2d(input, filters=32, kernel_size=3, activation=tf.nn.relu, name='conv_1')
     # output: ((n + 2p - f) / s) + 1
-    # tf.summary.image('conv_1', conv_1)
-    pool_1 = tf.layers.max_pooling2d(conv_1, pool_size=[2, 2], strides=2, name='pool_1')
     # output: n / 2
-    # tf.summary.image('pool_1', pool_1)
 
-    conv_2 = tf.layers.conv2d(pool_1, filters=64, kernel_size=3, activation=tf.nn.relu, name='conv_2')
-    pool_2 = tf.layers.max_pooling2d(conv_2, pool_size=[2, 2], strides=2, name='pool_2')
-    # tf.summary.image('pool_2', pool_2)
+    # (99, 161, 1)
+    conv1 = tf.layers.conv2d(input, filters=32, kernel_size=3, activation=tf.nn.relu, name='conv1')
+    # (97, 159, 32)
+    pool1 = tf.layers.max_pooling2d(conv1, pool_size=[2, 2], strides=2, name='pool1')
+    # (48, 79, 32)
+    tf.summary.image('pool1', pool1[:, :, :, 0:1])
 
-    pool_2_flat = tf.reshape(pool_2, [-1, 23 * 38 * 64], name='pool_2_flat')
-    dense_1 = tf.layers.dense(pool_2_flat, units=1024, activation=tf.nn.relu, name='dense_1')
-    dropout = tf.layers.dropout(dense_1, rate=params['dropout_rate'], training=mode == tf.estimator.ModeKeys.TRAIN, name='dropout')
+    conv2 = tf.layers.conv2d(pool1, filters=64, kernel_size=3, activation=tf.nn.relu, name='conv2')
+    # (46, 77, 64)
+    pool2 = tf.layers.max_pooling2d(conv2, pool_size=[2, 2], strides=2, name='pool2')
+    # (23, 38, 64)
+    tf.summary.image('pool2', pool2[:, :, :, 0:1])
+
+    conv3 = tf.layers.conv2d(pool2, filters=128, kernel_size=3, activation=tf.nn.relu, name='conv3')
+    # (21, 36, 128)
+    pool3 = tf.layers.max_pooling2d(conv3, pool_size=[2, 2], strides=2, name='pool3')
+    # (10, 18, 128)
+    tf.summary.image('pool3', pool3[:, :, :, 0:1])
+
+    conv4 = tf.layers.conv2d(pool3, filters=512, kernel_size=3, activation=tf.nn.relu, name='conv4')
+    # (8, 16, 512)
+    pool4 = tf.layers.max_pooling2d(conv4, pool_size=[2, 2], strides=2, name='pool4')
+    # (4, 8, 512)
+    tf.summary.image('pool4', pool4[:, :, :, 0:1])
+
+    pool4_flat = tf.reshape(pool4, [-1, 4 * 8 * 512], name='pool4_flat')
+    # (16384)
+    dense5 = tf.layers.dense(pool4_flat, units=128, activation=tf.nn.relu, name='dense5')
+    # (128)
+    dense6 = tf.layers.dense(dense5, units=64, activation=tf.nn.relu, name='dense6')
+    # (64)
+    dropout = tf.layers.dropout(dense6, rate=params['dropout_rate'], training=mode == tf.estimator.ModeKeys.TRAIN, name='dropout')
 
     logits = tf.layers.dense(dropout, units=10, name='logits')
 
@@ -40,11 +85,6 @@ def model_fn(features, labels, mode, params):
         # 'rmse': tf.metrics.root_mean_squared_error(tf.cast(labels, tf.float32), predictions),
         'accuracy': tf.metrics.accuracy(labels=labels, predictions=predictions['classes'])
     }
-
-    # print(logits)
-    # print(labels)
-    # print(predictions['classes'])
-    # print(eval_metric_ops['accuracy'])
 
     tf.summary.scalar('accuracy', eval_metric_ops['accuracy'][1])
 

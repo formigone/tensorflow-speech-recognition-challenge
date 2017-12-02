@@ -4,3 +4,4 @@ data_speech_commands_v0.01
 *.csv
 __pycache__
 img/
+inputs/
