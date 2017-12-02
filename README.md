@@ -14,6 +14,7 @@ My attempt at [Kaggle's TensorFlow speech recognition challenge](https://www.kag
  * Max pool layers: 2x2 with stride 2
  * First convolution layer: 32 filters
  * Subsequent convolution layers double number of filters
+ * Dropout layer: trained at 0.4
  * First fully connected layer: 128 units
  * Second fully connected layer: 64 units
 
