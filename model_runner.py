@@ -10,7 +10,7 @@ from util.labels import int2label
 FLAGS = None
 LEARNING_RATE = 1E-3
 DROPOUT_RATE = 0.4
-OUTPUT_CLASSES = 10
+OUTPUT_CLASSES = 11
 tf.logging.set_verbosity(tf.logging.DEBUG)
 
 
@@ -38,9 +38,19 @@ def main(args):
         eval = model.evaluate(input_fn=gen_input_fn_csv(FLAGS.input_file, num_epochs=1))
         print(eval)
     elif FLAGS.mode == 'predict':
+        labels_list = FLAGS.input_file.replace('.csv', '-pred.csv')
+        labels_fh = open(labels_list, 'r')
+        output_filename = FLAGS.input_file.replace('.csv', '-out.csv')
+        output_fh = open(output_filename, 'w+')
+        output_fh.write('fname,label\n')
         predictions = model.predict(input_fn=gen_input_fn_csv(FLAGS.input_file, num_epochs=1))
-        for i, p in enumerate(predictions):
-            print("Prediction %s: %s" % (i + 1, np.argmax(p['predictions'])))
+
+        print('Printing predictions...')
+        for pred, label in zip(predictions, labels_fh):
+            output_fh.write('{},{}\n'.format(label.strip(), int2label(np.argmax(pred['predictions']))))
+        labels_fh.close()
+        output_fh.close()
+        print('Saved predictions to {}'.format(output_filename))
     else:
         raise ValueError('Invalid mode')
 

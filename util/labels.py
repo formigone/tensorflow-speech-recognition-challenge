@@ -15,12 +15,18 @@ label_key_map = {k: v for v, k in enumerate(classes)}
 key_label_map = {v: k for v, k in enumerate(classes)}
 
 
-def int2label(value):
-    return key_label_map[value]
+def int2label(value, default='silence'):
+    try:
+        return key_label_map[value]
+    except KeyError:
+        return default
 
 
-def label2int(value):
-    return label_key_map[value]
+def label2int(value, default=10):
+    try:
+        return label_key_map[value]
+    except KeyError:
+        return default
 
 
 if __name__ == '__main__':
