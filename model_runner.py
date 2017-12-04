@@ -3,12 +3,12 @@ import sys
 
 import numpy as np
 import tensorflow as tf
-from models import simple_cnn, vgg
+from models import simple_cnn, deep_cnn
 from util.data import gen_input_fn_csv
 from util.labels import int2label
 
 FLAGS = None
-LEARNING_RATE = 1E-4
+LEARNING_RATE = 1E-3
 DROPOUT_RATE = 0.4
 OUTPUT_CLASSES = 10
 tf.logging.set_verbosity(tf.logging.DEBUG)
@@ -21,8 +21,8 @@ def main(args):
         'output_classes': OUTPUT_CLASSES,
     }
 
-    if FLAGS.model == 'vgg':
-        model_fn = vgg
+    if FLAGS.model == 'deep':
+        model_fn = deep_cnn
     else:
         model_fn = simple_cnn
 
