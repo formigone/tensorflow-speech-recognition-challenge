@@ -39,6 +39,7 @@ def model_fn(features, labels, mode, params):
     # (48, 79, 64)
     conv1_kernel = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, 'conv1/kernel')
     tf.summary.histogram('conv1', conv1_kernel[0])
+    tf.summary.image('conv1', tf.transpose(conv1_kernel[0], perm=[3, 0, 1, 2]), max_outputs=64)
     tf.summary.image('pool1', pool1[:, :, :, 0:1])
 
     conv2 = tf.layers.conv2d(pool1, filters=128, kernel_size=3, activation=tf.nn.relu, name='conv2')
