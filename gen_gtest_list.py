@@ -11,10 +11,12 @@ parser.add_argument('--out_files', type=str, metavar='', default=None, help='Lis
 FLAGS, unparsed = parser.parse_known_args()
 
 if FLAGS.mix and FLAGS.max_per_mix:
-    file_splits = [[], []]
+    l90 = []
+    l10 = []
     base = 'data_speech_commands_v0.01/'
     dirs = FLAGS.mix.split(',')
     for dir in dirs:
+        print('dir: {}'.format(dir))
         files = os.listdir(base + dir)
         # Collect sub-dir separately so it can be shuffled + split
         out_2 = []
@@ -22,21 +24,18 @@ if FLAGS.mix and FLAGS.max_per_mix:
             out_2.append('{} {}'.format(dir, files[i]))
         random.shuffle(out_2)
 
-        # Split 90/10
-        split_point = int(len(out_2) * 0.9)
-        for i in range(len(out_2)):
-            if i < split_point:
-                file_splits[0].append(out_2[i])
-            else:
-                file_splits[1].append(out_2[i])
-        random.shuffle(file_splits[0])
-        random.shuffle(file_splits[1])
+        l90 += out_2[0:-80]
+        l10 += out_2[-80:]
+        random.shuffle(l90)
+        random.shuffle(l10)
 
-    for i, out_file in enumerate(FLAGS.out_files.split(',')):
-        out_fh = open(out_file, 'w+')
-        for row in file_splits[i]:
-            out_fh.write(row + '\n')
-        out_fh.close()
+    out1, out2 = FLAGS.out_files.split(',')
+    print('OUT: {}'.format(out1))
+    with open(out1, 'w+') as fh:
+        fh.write('\n'.join(l90))
+    print('OUT: {}'.format(out2))
+    with open(out2, 'w+') as fh:
+        fh.write('\n'.join(l10))
 else:
     dir = os.listdir(FLAGS.dir)
     for file in dir:

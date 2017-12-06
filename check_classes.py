@@ -21,5 +21,6 @@ with open(FLAGS.file, 'r') as fh:
         else:
             classes[key] = 1
 
+print(classes)
 for k in sorted(classes.keys()):
-    print(labels.int2label(int(k)).ljust(8) + ' = ' + str(classes[key]))
+    print(labels.int2label(int(k)).ljust(8) + ' = ' + str(classes[k]))

@@ -5,7 +5,7 @@ from datetime import datetime
 
 import numpy as np
 import tensorflow as tf
-from models import simple_cnn, deep_cnn
+from models import simple_cnn, deep_cnn, deep_cnn2
 from util.data import gen_input_fn_csv
 from util.labels import int2label
 
@@ -53,6 +53,8 @@ def main(args):
 
     if FLAGS.model == 'deep':
         model_fn = deep_cnn
+    elif FLAGS.model == 'deep-v2':
+        model_fn = deep_cnn2
     else:
         model_fn = simple_cnn
 
