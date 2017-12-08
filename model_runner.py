@@ -5,14 +5,13 @@ from datetime import datetime
 
 import numpy as np
 import tensorflow as tf
-from models import simple_cnn, deep_cnn, deep_cnn2, deep_cnn3
+from models import trivial_cnn, deep_cnn, deep_cnn2, deep_cnn3
 from util.data import gen_input_fn_csv
 from util.labels import int2label
 
 FLAGS = None
-LEARNING_RATE = 1E-3
-#LEARNING_RATE = 0.0005
-DROPOUT_RATE = 0.4
+LEARNING_RATE = 0.0005
+DROPOUT_RATE = 0.5
 OUTPUT_CLASSES = 11
 tf.logging.set_verbosity(tf.logging.DEBUG)
 
@@ -59,19 +58,19 @@ def main(args):
     elif FLAGS.model == 'deep-v3':
         model_fn = deep_cnn3
     else:
-        model_fn = simple_cnn
+        model_fn = trivial_cnn
 
-    start = datetime.now()
     model = tf.estimator.Estimator(model_dir=FLAGS.model_dir, model_fn=model_fn.model_fn, params=model_params)
-    total_time = datetime.now() - start
-    print('  loaded model in {}'.format(total_time))
 
     if FLAGS.mode == 'train':
-        for i in range(1000):
-            file_num = (i % FLAGS.total_input_files) + 1
-            filename = FLAGS.input_file_pattern.replace('{}', str(file_num))
-            print('Input file: {}'.format(filename))
-            model.train(input_fn=gen_input_fn_csv(filename, num_epochs=25, shuffle=True))
+        filename = FLAGS.input_file
+        print(filename)
+        # model.train(input_fn=gen_input_fn_csv(filename, num_epochs=5, shuffle=True))
+        # for i in range(1000):
+        #     file_num = (i % FLAGS.total_input_files) + 1
+        #     filename = FLAGS.input_file_pattern.replace('{}', str(file_num))
+        #     print('Input file: {}'.format(filename))
+        #     model.train(input_fn=gen_input_fn_csv(filename, num_epochs=25, shuffle=True))
     elif FLAGS.mode == 'eval':
         eval = model.evaluate(input_fn=gen_input_fn_csv(FLAGS.input_file, num_epochs=1))
         print(eval)
@@ -83,8 +82,8 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--mode', type=str, metavar='', required=True, help='Must be [train|eval|predict]')
-    parser.add_argument('--model', type=str, metavar='', required=True, help='Must be [simple_cnn|vgg]')
+    parser.add_argument('--mode', type=str, metavar='', default='train', help='Must be [train|eval|predict]')
+    parser.add_argument('--model', type=str, metavar='', help='Must be [simple_cnn|vgg]')
     parser.add_argument('--input_file_pattern', type=str, metavar='', help='Path to input data file. Ex: my-file{}.csv')
     parser.add_argument('--total_input_files', type=int, metavar='', help='Max value to increment input file pattern')
     parser.add_argument('--input_file', type=str, metavar='', help='Path to input file')
