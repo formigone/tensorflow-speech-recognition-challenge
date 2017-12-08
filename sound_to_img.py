@@ -4,6 +4,7 @@ import numpy as np
 from scipy import signal
 from scipy.io import wavfile
 from util.labels import label2int, int2label
+from util.specgram import from_file
 import os
 
 
@@ -21,18 +22,11 @@ def parse_data_file(file_path, offset, max, shape=(99, 161), filename_label=Fals
         if m >= max:
             break
         line = line.strip()
-        key, wav = line.split()
-        path = 'data_speech_commands_v0.01/' + key + '/' + wav
-        sr, sound = wavfile.read(path)
-        if len(sound) < sr:
-            print('  >> check: {}'.format(path))
-            while len(sound) < sr:
-                sound = np.concatenate((sound, sound))
-        if len(sound) != sr:
-            sound = sound[0:sr]
-        spec = log_specgram(sound, sr)
+        root, key, wav = line.strip().split()
+        path = root + '/' + key + '/' + wav
+        spec = from_file(path)
         if spec.shape != shape:
-            print('>>> bad file: {}'.format(path))
+            print('>>> bad file: {} - {}'.format(path, spec.shape))
             continue
         flat = spec.reshape((1, spec.shape[0] * spec.shape[1]))
         if x_len == 0:
@@ -50,8 +44,7 @@ def parse_data_file(file_path, offset, max, shape=(99, 161), filename_label=Fals
     return header, data, filename_labels
 
 
-def log_specgram(audio, sample_rate, window_size=20,
-                 step_size=10, eps=1e-10):
+def log_specgram(audio, sample_rate, window_size=20, step_size=10, eps=1e-10):
     nperseg = int(round(window_size * sample_rate / 1e3))
     noverlap = int(round(step_size * sample_rate / 1e3))
     freqs, _, spec = signal.spectrogram(audio,

@@ -5,12 +5,13 @@ from datetime import datetime
 
 import numpy as np
 import tensorflow as tf
-from models import simple_cnn, deep_cnn, deep_cnn2
+from models import simple_cnn, deep_cnn, deep_cnn2, deep_cnn3
 from util.data import gen_input_fn_csv
 from util.labels import int2label
 
 FLAGS = None
 LEARNING_RATE = 1E-3
+#LEARNING_RATE = 0.0005
 DROPOUT_RATE = 0.4
 OUTPUT_CLASSES = 11
 tf.logging.set_verbosity(tf.logging.DEBUG)
@@ -55,6 +56,8 @@ def main(args):
         model_fn = deep_cnn
     elif FLAGS.model == 'deep-v2':
         model_fn = deep_cnn2
+    elif FLAGS.model == 'deep-v3':
+        model_fn = deep_cnn3
     else:
         model_fn = simple_cnn
 
