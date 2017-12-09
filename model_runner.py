@@ -5,12 +5,12 @@ from datetime import datetime
 
 import numpy as np
 import tensorflow as tf
-from models import trivial_cnn, deep_cnn, deep_cnn2, deep_cnn3
-from util.data import gen_input_fn_csv
+from models import trivial_cnn, deep_cnn, deep_cnn2, deep_cnn3, deep_cnn4
+from util.data import gen_input_fn_tfrecords
 from util.labels import int2label
 
 FLAGS = None
-LEARNING_RATE = 0.0005
+LEARNING_RATE = 0.005
 DROPOUT_RATE = 0.5
 OUTPUT_CLASSES = 11
 tf.logging.set_verbosity(tf.logging.DEBUG)
@@ -21,26 +21,26 @@ def predict(model):
     output_fh = open(FLAGS.output_file, 'w+')
     output_fh.write('fname,label\n')
     output_fh.close()
-    while True:
-        file = FLAGS.input_file + str(i) + '.csv'
-        print('Input file: {}'.format(file))
-        if os.path.isfile(file):
-            labels_list = file.replace('.csv', '-pred.csv')
-            labels_fh = open(labels_list, 'r')
-
-            start = datetime.now()
-            predictions = model.predict(input_fn=gen_input_fn_csv(file, num_epochs=1))
-            total_time = datetime.now() - start
-            print('  calculated predictions in {}'.format(total_time))
-
-            print('Printing predictions for {}...'.format(file))
-            output_fh = open(FLAGS.output_file, 'a')
-            for pred, label in zip(predictions, labels_fh):
-                output_fh.write('{},{}\n'.format(label.strip(), int2label(np.argmax(pred['predictions']))))
-            labels_fh.close()
-            i += 1
-        else:
-            break
+    # while True:
+    #     file = FLAGS.input_file + str(i) + '.csv'
+    #     print('Input file: {}'.format(file))
+    #     if os.path.isfile(file):
+    #         labels_list = file.replace('.csv', '-pred.csv')
+    #         labels_fh = open(labels_list, 'r')
+    #
+    #         start = datetime.now()
+    #         predictions = model.predict(input_fn=gen_input_fn_csv(file, num_epochs=1))
+    #         total_time = datetime.now() - start
+    #         print('  calculated predictions in {}'.format(total_time))
+    #
+    #         print('Printing predictions for {}...'.format(file))
+    #         output_fh = open(FLAGS.output_file, 'a')
+    #         for pred, label in zip(predictions, labels_fh):
+    #             output_fh.write('{},{}\n'.format(label.strip(), int2label(np.argmax(pred['predictions']))))
+    #         labels_fh.close()
+    #         i += 1
+    #     else:
+    #         break
     print('Saved predictions to {}'.format(FLAGS.output_file))
 
 
@@ -57,23 +57,17 @@ def main(args):
         model_fn = deep_cnn2
     elif FLAGS.model == 'deep-v3':
         model_fn = deep_cnn3
+    elif FLAGS.model == 'deep-v4':
+        model_fn = deep_cnn4
     else:
         model_fn = trivial_cnn
 
     model = tf.estimator.Estimator(model_dir=FLAGS.model_dir, model_fn=model_fn.model_fn, params=model_params)
 
     if FLAGS.mode == 'train':
-        filename = FLAGS.input_file
-        print(filename)
-        # model.train(input_fn=gen_input_fn_csv(filename, num_epochs=5, shuffle=True))
-        # for i in range(1000):
-        #     file_num = (i % FLAGS.total_input_files) + 1
-        #     filename = FLAGS.input_file_pattern.replace('{}', str(file_num))
-        #     print('Input file: {}'.format(filename))
-        #     model.train(input_fn=gen_input_fn_csv(filename, num_epochs=25, shuffle=True))
+        model.train(input_fn=gen_input_fn_tfrecords(FLAGS.input_file, repeat=10))
     elif FLAGS.mode == 'eval':
-        eval = model.evaluate(input_fn=gen_input_fn_csv(FLAGS.input_file, num_epochs=1))
-        print(eval)
+        model.evaluate(input_fn=gen_input_fn_tfrecords(FLAGS.input_file))
     elif FLAGS.mode == 'predict':
         predict(model)
     else:

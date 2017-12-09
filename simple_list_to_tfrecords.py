@@ -4,6 +4,7 @@ from util.specgram import from_file
 from util.labels import label2int
 import numpy as np
 import os
+import random
 
 
 def list_to_tfrecord(input_file, tfrecord_filename, label_col=-1):
@@ -47,18 +48,83 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--in_file', type=str, help='Path to input file')
     parser.add_argument('--out_file', type=str, help='Path to output file')
-    parser.add_argument('--inspect', type=str, help='Path to tfrecord to inspect')
+    parser.add_argument('--inspect', type=str, help='Only inspect tfrecord in in_file')
+    parser.add_argument('--xp', type=str, help='Experimental')
     FLAGS, _ = parser.parse_known_args()
 
     if FLAGS.inspect is not None:
-        i = 0
         for example in tf.python_io.tf_record_iterator(FLAGS.in_file):
-            i += 1
-        print(i)
+            result = tf.train.Example.FromString(example)
+            print(result.features.feature['tag'])
+    elif FLAGS.xp == 'create':
+        with python_io.TFRecordWriter('test.tfr') as writer:
+            for y in range(25):
+                features = np.asarray([y] + [float(random.random()) for x in range(3)], dtype=np.float32)
+                print(features)
+                label = y % 3
+                example = tf.train.Example()
+                example.features.feature['x'].float_list.value.extend(features)
+                example.features.feature['y'].int64_list.value.append(label)
+                writer.write(example.SerializeToString())
+    elif FLAGS.xp == 'use':
+        def func(features, labels, mode, params):
+            dense = tf.layers.dense(features, units=10, activation=tf.nn.relu)
+            logits = tf.layers.dense(dense, units=3)
+
+            predictions = {
+                'classes': tf.argmax(logits, axis=1),
+                'probabilities': tf.nn.softmax(logits),
+                'tags': features
+            }
+
+            if mode == tf.estimator.ModeKeys.PREDICT:
+                return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
+
+            onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=3)
+            loss = tf.losses.softmax_cross_entropy(onehot_labels=onehot_labels, logits=logits)
+
+            optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
+            train_op = optimizer.minimize(loss=loss, global_step=tf.train.get_global_step())
+            eval_metric_ops = {
+                'accuracy': tf.metrics.accuracy(labels=labels, predictions=3)
+            }
+
+            return tf.estimator.EstimatorSpec(
+                mode=mode,
+                loss=loss,
+                train_op=train_op,
+                eval_metric_ops=eval_metric_ops
+            )
+
+        model = tf.estimator.Estimator(model_fn=func)
+
+
+        def parse_function(example_proto):
+            features = {
+                'x': tf.FixedLenFeature((4,), tf.float32),
+                'y': tf.FixedLenFeature((), tf.int64),
+            }
+            parsed_features = tf.parse_single_example(example_proto, features)
+            return parsed_features['x'], parsed_features['y']
+
+        def input_fn():
+            dataset = tf.contrib.data.TFRecordDataset(['test.tfr'])
+            dataset = dataset.map(parse_function)
+            # dataset = dataset.shuffle(0)
+            dataset = dataset.repeat(1)
+            dataset = dataset.batch(5)
+            features, label = dataset.make_one_shot_iterator().get_next()
+            return features, label
+
+        model.train(input_fn=input_fn)
+        preds = model.predict(input_fn=input_fn)
+        print('Predictions:')
+        for pred in preds:
+            print(pred)
     elif FLAGS.in_file is not None:
         list_to_tfrecord(FLAGS.in_file, FLAGS.out_file)
 
-    if FLAGS.inspect is None:
+    if FLAGS.inspect is None and FLAGS.xp is None:
         shuffle_size = 50
         batch_size = 25
 

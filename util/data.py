@@ -21,11 +21,12 @@ def gen_input_fn_csv(filename, num_epochs=1, shuffle=False, target_dtype=np.uint
         shuffle=shuffle)
 
 
-def gen_input_fn_tfrecords(filename, batch_size, shuffle_size, repeat=None):
+def gen_input_fn_tfrecords(filename, batch_size=64, shuffle_size=None, repeat=1):
     def input_fn():
         dataset = tf.contrib.data.TFRecordDataset([filename])
         dataset = dataset.map(parse_function)
-        dataset = dataset.shuffle(shuffle_size)
+        if shuffle_size is not None:
+            dataset = dataset.shuffle(shuffle_size)
         dataset = dataset.repeat(repeat)
         dataset = dataset.batch(batch_size)
         features, label = dataset.make_one_shot_iterator().get_next()
@@ -49,7 +50,7 @@ def list_to_tfrecord(input_file, tfrecord_filename, label_col=-1):
 
 def parse_function(example_proto):
     features = {
-        'x': tf.FixedLenFeature((99*161,), tf.float32),
+        'x': tf.FixedLenFeature((99 * 161,), tf.float32),
         'y': tf.FixedLenFeature((), tf.int64)
     }
     parsed_features = tf.parse_single_example(example_proto, features)
