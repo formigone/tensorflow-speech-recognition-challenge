@@ -6,19 +6,28 @@ def model_fn(features, labels, mode, params):
     Network stats:
     | layer    | output shape   | parameters
     +----------+----------------+--------------
-    | conv1    | (97, 159, 32)  | 320
-    | pool1    | (97, 159, 32)  | 0
-    | conv2    | (46, 77, 64)   | 576
-    | pool2    | (23, 38, 64)   | 0
-    | conv3    | (21, 36, 128)  | 1,152
-    | pool3    | (10, 18, 128)  | 0
-    | conv4    | (8, 16, 512)   | 4,608
-    | pool4    | (4, 8, 512)    | 0
-    | flat     | (16384)        | 0
-    | dense4   | (128)          | 2,097,280
-    | dense5   | (64)           | 8,256
-    | softmax  | (10)           | 650
-    \ TOTAL    |                | 2,112,842
+    | conv1    | (99, 161, 64)  |
+    | conv2    | (97, 159, 64)  |
+    | conv3    | (95, 157, 64)  |
+    | pool3    | (47, 78, 64)   | 0
+
+    | conv4    | (47, 78, 128)  |
+    | conv5    | (45, 76, 128)  |
+    | conv6    | (43, 74, 128)  |
+    | pool6    | (21, 37, 128)  | 0
+
+    | conv7    | (21, 37, 256)  |
+    | conv8    | (19, 35, 256)  |
+    | conv9    | (17, 33, 256)  |
+    | pool9    | (8, 16, 256)   | 0
+
+    | conv10   | (6, 14, 512)   |
+    | pool10   | (3, 7, 512)    | 0
+    | flat     | (10752)        | 0
+    | dense11  | (2048)         |
+    | dense12  | (2048)         |
+    | softmax  | (11)           |
+    \ TOTAL    |                |
 
     :param features:
     :param labels:
@@ -26,14 +35,15 @@ def model_fn(features, labels, mode, params):
     :param params:
     :return:
     '''
-    input = tf.reshape(features['x'], [-1, 99, 161, 1])
-    tf.summary.image('input', input)
+
+    x = tf.reshape(features, [-1, 99, 161, 1], name='input_deep_cnn4')
+    tf.summary.image('input', x)
 
     # output: ((n + 2p - f) / s) + 1
     # output: n / 2
 
     # (99, 161, 1)
-    conv1 = tf.layers.conv2d(input, filters=64, kernel_size=3, padding='same', activation=tf.nn.relu, name='conv1')
+    conv1 = tf.layers.conv2d(x, filters=64, kernel_size=3, padding='same', activation=tf.nn.relu, name='conv1')
     # (99, 161, 64)
     conv2 = tf.layers.conv2d(conv1, filters=64, kernel_size=3, activation=tf.nn.relu, name='conv2')
     # (97, 159, 64)
@@ -41,6 +51,11 @@ def model_fn(features, labels, mode, params):
     # (95, 157, 64)
     pool3 = tf.layers.max_pooling2d(conv3, pool_size=[2, 2], strides=2, name='pool3')
     # (47, 78, 64)
+    tf.summary.image('pool3', pool3[:, :, :, 0:1])
+
+    tf.summary.histogram('conv1', tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, 'conv1/kernel')[0])
+    tf.summary.histogram('conv2', tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, 'conv2/kernel')[0])
+    tf.summary.histogram('conv3', tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, 'conv3/kernel')[0])
     tf.summary.image('pool3', pool3[:, :, :, 0:1])
 
     # (47, 78, 64)
@@ -54,6 +69,11 @@ def model_fn(features, labels, mode, params):
     # (21, 37, 128)
     tf.summary.image('pool6', pool6[:, :, :, 0:1])
 
+    tf.summary.histogram('conv4', tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, 'conv4/kernel')[0])
+    tf.summary.histogram('conv5', tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, 'conv5/kernel')[0])
+    tf.summary.histogram('conv6', tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, 'conv6/kernel')[0])
+    tf.summary.image('pool6', pool6[:, :, :, 0:1])
+
     # (21, 37, 128)
     conv7 = tf.layers.conv2d(pool6, filters=256, kernel_size=3, padding='same', activation=tf.nn.relu, name='conv7')
     # (21, 37, 256)
@@ -65,19 +85,23 @@ def model_fn(features, labels, mode, params):
     # (8, 16, 256)
     tf.summary.image('pool9', pool9[:, :, :, 0:1])
 
+    tf.summary.histogram('conv7', tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, 'conv7/kernel')[0])
+    tf.summary.histogram('conv8', tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, 'conv8/kernel')[0])
+    tf.summary.histogram('conv9', tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, 'conv9/kernel')[0])
+    tf.summary.image('pool9', pool9[:, :, :, 0:1])
+
     # (8, 16, 256)
     conv10 = tf.layers.conv2d(pool9, filters=512, kernel_size=3, activation=tf.nn.relu, name='conv10')
-    # (6, 8, 512)
+    # (6, 14, 512)
     pool10 = tf.layers.max_pooling2d(conv10, pool_size=[2, 2], strides=2, name='pool10')
-    # (3, 4, 512)
+    # (3, 7, 512)
     tf.summary.image('pool10', pool10[:, :, :, 0:1])
 
-    conv2_kernel = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, 'conv2/kernel')
-    tf.summary.histogram('conv2', conv2_kernel[0])
-    tf.summary.image('pool2', pool2[:, :, :, 0:1])
+    tf.summary.histogram('conv10', tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, 'conv10/kernel')[0])
+    tf.summary.image('pool10', pool10[:, :, :, 0:1])
 
-    pool10_flat = tf.reshape(pool4, [-1, 3 * 4 * 512], name='pool10_flat')
-    # (6144)
+    pool10_flat = tf.reshape(pool10, [-1, 3 * 7 * 512], name='pool10_flat')
+    # (10752)
     dropout11 = tf.layers.dropout(pool10_flat, rate=params['dropout_rate'], training=mode == tf.estimator.ModeKeys.TRAIN, name='dropout11')
     dense11 = tf.layers.dense(dropout11, units=2048, activation=tf.nn.relu, name='dense11')
     dropout12 = tf.layers.dropout(dense11, rate=params['dropout_rate'], training=mode == tf.estimator.ModeKeys.TRAIN, name='dropout12')

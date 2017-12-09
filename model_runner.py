@@ -78,11 +78,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--mode', type=str, metavar='', default='train', help='Must be [train|eval|predict]')
     parser.add_argument('--model', type=str, metavar='', help='Must be [simple_cnn|vgg]')
-    parser.add_argument('--input_file_pattern', type=str, metavar='', help='Path to input data file. Ex: my-file{}.csv')
-    parser.add_argument('--total_input_files', type=int, metavar='', help='Max value to increment input file pattern')
+    parser.add_argument('--model_dir', type=str, metavar='', default=None, help='Path to save the model to')
     parser.add_argument('--input_file', type=str, metavar='', help='Path to input file')
     parser.add_argument('--output_file', type=str, metavar='', help='Path to output file')
-    parser.add_argument('--model_dir', type=str, metavar='', default=None, help='Path to save the model to')
 
     FLAGS, unparsed = parser.parse_known_args()
 
