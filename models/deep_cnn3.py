@@ -26,14 +26,16 @@ def model_fn(features, labels, mode, params):
     :param params:
     :return:
     '''
-    input = tf.reshape(features['x'], [-1, 99, 161, 1])
-    tf.summary.image('input', input)
+    # input = tf.reshape(features['x'], [-1, 99, 161, 1])
+    x = tf.reshape(features, [-1, 99, 161, 1], name='input_deep_cnn3')
+    x_norm = tf.layers.batch_normalization(x, training=mode == tf.estimator.ModeKeys.TRAIN, name='x_norm')
+    tf.summary.image('input', x)
 
     # output: ((n + 2p - f) / s) + 1
     # output: n / 2
 
     # (99, 161, 1)
-    conv1 = tf.layers.conv2d(input, filters=64, kernel_size=3, activation=tf.nn.relu, name='conv1')
+    conv1 = tf.layers.conv2d(x_norm, filters=64, kernel_size=3, activation=tf.nn.relu, name='conv1')
     # (97, 159, 64)
     pool1 = tf.layers.max_pooling2d(conv1, pool_size=[2, 2], strides=2, name='pool1')
     # (48, 79, 64)
@@ -89,7 +91,9 @@ def model_fn(features, labels, mode, params):
     tf.summary.scalar('loss', loss)
 
     optimizer = tf.train.GradientDescentOptimizer(learning_rate=params['learning_rate'])
-    train_op = optimizer.minimize(loss=loss, global_step=tf.train.get_global_step())
+    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+    with tf.control_dependencies(update_ops):
+        train_op = optimizer.minimize(loss=loss, global_step=tf.train.get_global_step())
     eval_metric_ops = {
         # 'rmse': tf.metrics.root_mean_squared_error(tf.cast(labels, tf.float32), predictions),
         'accuracy': tf.metrics.accuracy(labels=labels, predictions=predictions['classes'])

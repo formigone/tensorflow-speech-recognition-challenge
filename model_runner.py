@@ -17,30 +17,20 @@ tf.logging.set_verbosity(tf.logging.DEBUG)
 
 
 def predict(model):
-    i = 1
-    output_fh = open(FLAGS.output_file, 'w+')
-    output_fh.write('fname,label\n')
-    output_fh.close()
-    # while True:
-    #     file = FLAGS.input_file + str(i) + '.csv'
-    #     print('Input file: {}'.format(file))
-    #     if os.path.isfile(file):
-    #         labels_list = file.replace('.csv', '-pred.csv')
-    #         labels_fh = open(labels_list, 'r')
-    #
-    #         start = datetime.now()
-    #         predictions = model.predict(input_fn=gen_input_fn_csv(file, num_epochs=1))
-    #         total_time = datetime.now() - start
-    #         print('  calculated predictions in {}'.format(total_time))
-    #
-    #         print('Printing predictions for {}...'.format(file))
-    #         output_fh = open(FLAGS.output_file, 'a')
-    #         for pred, label in zip(predictions, labels_fh):
-    #             output_fh.write('{},{}\n'.format(label.strip(), int2label(np.argmax(pred['predictions']))))
-    #         labels_fh.close()
-    #         i += 1
-    #     else:
-    #         break
+    tf.logging.debug('Generating predictions...')
+    predictions = model.predict(input_fn=gen_input_fn_tfrecords(FLAGS.input_file, repeat=1))
+    tf.logging.debug('Got predictions')
+    files = os.listdir('data_speech_commands_v0.01/test/audio')
+    tf.logging.debug('Got list of files to label')
+    i = 0
+    with open(FLAGS.output_file, 'w+') as out_fh:
+        out_fh.write('fname,label\n')
+        for pred, filename in zip(predictions, files):
+            label = int2label(np.argmax(pred['predictions']))
+            out_fh.write('{},{}\n'.format(filename, label))
+            if i % 1000 == 0:
+                tf.logging.debug('file {}: {} (iteration {})'.format(filename, label, i))
+            i += 1
     print('Saved predictions to {}'.format(FLAGS.output_file))
 
 
@@ -65,7 +55,7 @@ def main(args):
     model = tf.estimator.Estimator(model_dir=FLAGS.model_dir, model_fn=model_fn.model_fn, params=model_params)
 
     if FLAGS.mode == 'train':
-        model.train(input_fn=gen_input_fn_tfrecords(FLAGS.input_file, repeat=10))
+        model.train(input_fn=gen_input_fn_tfrecords(FLAGS.input_file, batch_size=FLAGS.batch_size, repeat=10))
     elif FLAGS.mode == 'eval':
         model.evaluate(input_fn=gen_input_fn_tfrecords(FLAGS.input_file))
     elif FLAGS.mode == 'predict':
@@ -81,6 +71,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_dir', type=str, metavar='', default=None, help='Path to save the model to')
     parser.add_argument('--input_file', type=str, metavar='', help='Path to input file')
     parser.add_argument('--output_file', type=str, metavar='', help='Path to output file')
+    parser.add_argument('--batch_size', type=int, metavar='', default=16, help='Only used in training')
 
     FLAGS, unparsed = parser.parse_known_args()
 

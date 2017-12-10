@@ -7,30 +7,50 @@ import os
 import random
 
 
-def list_to_tfrecord(input_file, tfrecord_filename, label_col=-1):
+def list_to_tfrecord(input_file, tfrecord_filename, label_col=-1, is_dir=False):
     with python_io.TFRecordWriter(tfrecord_filename) as writer:
-        with open(input_file, 'r') as lines:
-            total_lines = os.popen('wc -l ' + input_file).read().strip()
-            total_lines = total_lines.split(' ')[0]
+        if is_dir:
+            root = 'data_speech_commands_v0.01/test/audio/'
+            total_lines = 158539
             i = 0
-            for line in lines:
-                root = 'data_speech_commands_v0.01'
-                key, wav = line.strip().split()
-                path = root + '/' + key + '/' + wav
-                spec = from_file(path)
+            for filename in os.listdir(input_file):
+                spec = from_file(root + filename)
 
                 if spec.shape != (99, 161):
-                    print('>>> bad file: {} - {}'.format(path, spec.shape))
+                    print('>>> bad file: {} - {}'.format(filename, spec.shape))
                     continue
                 features = np.asarray(spec.reshape((1, spec.shape[0] * spec.shape[1])), dtype=np.float32)
-                label = label2int(key)
+                label = 0
                 example = tf.train.Example()
                 example.features.feature['x'].float_list.value.extend(features[0])
                 example.features.feature['y'].int64_list.value.append(label)
                 writer.write(example.SerializeToString())
-                if i % 100 == 0:
-                    print(str(i) + '/' + str(total_lines))
+                if i % 32 == 0:
+                    print(str(int(i / total_lines * 100)) + '%')
                 i += 1
+        else:
+            with open(input_file, 'r') as lines:
+                total_lines = os.popen('wc -l ' + input_file).read().strip()
+                total_lines = total_lines.split(' ')[0]
+                i = 0
+                root = 'data_speech_commands_v0.01'
+                for line in lines:
+                    key, wav = line.strip().split()
+                    path = root + '/' + key + '/' + wav
+                    spec = from_file(path)
+
+                    if spec.shape != (99, 161):
+                        print('>>> bad file: {} - {}'.format(path, spec.shape))
+                        continue
+                    features = np.asarray(spec.reshape((1, spec.shape[0] * spec.shape[1])), dtype=np.float32)
+                    label = label2int(key)
+                    example = tf.train.Example()
+                    example.features.feature['x'].float_list.value.extend(features[0])
+                    example.features.feature['y'].int64_list.value.append(label)
+                    writer.write(example.SerializeToString())
+                    if i % 100 == 0:
+                        print(str(i) + '/' + str(total_lines))
+                    i += 1
 
 
 def parse_function(example_proto):
@@ -58,7 +78,7 @@ if __name__ == '__main__':
             print(result.features.feature['tag'])
     elif FLAGS.xp == 'create':
         with python_io.TFRecordWriter('test.tfr') as writer:
-            for y in range(25):
+            for y in range(100):
                 features = np.asarray([y] + [float(random.random()) for x in range(3)], dtype=np.float32)
                 print(features)
                 label = y % 3
@@ -118,11 +138,13 @@ if __name__ == '__main__':
 
         model.train(input_fn=input_fn)
         preds = model.predict(input_fn=input_fn)
+        ls = os.listdir('fake')
         print('Predictions:')
-        for pred in preds:
-            print(pred)
+        for pred, fake in zip(preds, ls):
+            print('Tag: {},  filename: {}'.format(pred['tags'][0], fake))
     elif FLAGS.in_file is not None:
-        list_to_tfrecord(FLAGS.in_file, FLAGS.out_file)
+        list_to_tfrecord(FLAGS.in_file, FLAGS.out_file, is_dir=True)
+        print('Generated massive tfrec. BOOM!')
 
     if FLAGS.inspect is None and FLAGS.xp is None:
         shuffle_size = 50
