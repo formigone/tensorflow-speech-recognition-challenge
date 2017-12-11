@@ -1,16 +1,15 @@
 import argparse
 import sys
 import os
-from datetime import datetime
 
 import numpy as np
 import tensorflow as tf
-from models import trivial_cnn, deep_cnn, deep_cnn2, deep_cnn3, deep_cnn4
+from models import trivial_cnn, deep_cnn, deep_cnn2, deep_cnn3, deep_cnn4, deep_cnn5
 from util.data import gen_input_fn_tfrecords
 from util.labels import int2label
 
 FLAGS = None
-LEARNING_RATE = 0.005
+LEARNING_RATE = 0.0001
 DROPOUT_RATE = 0.5
 OUTPUT_CLASSES = 11
 tf.logging.set_verbosity(tf.logging.DEBUG)
@@ -49,6 +48,8 @@ def main(args):
         model_fn = deep_cnn3
     elif FLAGS.model == 'deep-v4':
         model_fn = deep_cnn4
+    elif FLAGS.model == 'deep-v5':
+        model_fn = deep_cnn5
     else:
         model_fn = trivial_cnn
 

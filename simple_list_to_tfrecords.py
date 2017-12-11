@@ -7,27 +7,32 @@ import os
 import random
 
 
-def list_to_tfrecord(input_file, tfrecord_filename, label_col=-1, is_dir=False):
+def list_to_tfrecord(input_file, tfrecord_filename, label_col=-1, is_dir=False, max_files=None):
     with python_io.TFRecordWriter(tfrecord_filename) as writer:
         if is_dir:
-            root = 'data_speech_commands_v0.01/test/audio/'
-            total_lines = 158539
-            i = 0
+            # root = 'data_speech_commands_v0.01/test/audio/'
+            # total_lines = 158539
+            # i = 0
             for filename in os.listdir(input_file):
-                spec = from_file(root + filename)
+                # spec = from_file(root + filename)
+                sound = from_file(input_file + '/' + filename, sound_only=True)
 
-                if spec.shape != (99, 161):
-                    print('>>> bad file: {} - {}'.format(filename, spec.shape))
-                    continue
-                features = np.asarray(spec.reshape((1, spec.shape[0] * spec.shape[1])), dtype=np.float32)
+                # if spec.shape != (99, 161):
+                #     print('>>> bad file: {} - {}'.format(filename, spec.shape))
+                #     continue
+                # features = np.asarray(spec.reshape((1, spec.shape[0] * spec.shape[1])), dtype=np.float32)
+                features = sound
                 label = 0
                 example = tf.train.Example()
-                example.features.feature['x'].float_list.value.extend(features[0])
+                # example.features.feature['x'].float_list.value.extend(features[0])
+                example.features.feature['x'].float_list.value.extend(features)
                 example.features.feature['y'].int64_list.value.append(label)
                 writer.write(example.SerializeToString())
-                if i % 32 == 0:
-                    print(str(int(i / total_lines * 100)) + '%')
-                i += 1
+                # if i % 32 == 0:
+                #     print(str(int(i / total_lines * 100)) + '%')
+                # i += 1
+                # if max_files is not None and max_files == i:
+                #     break
         else:
             with open(input_file, 'r') as lines:
                 total_lines = os.popen('wc -l ' + input_file).read().strip()
@@ -68,6 +73,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--in_file', type=str, help='Path to input file')
     parser.add_argument('--out_file', type=str, help='Path to output file')
+    parser.add_argument('--max_files', type=int, help='Max files in file')
     parser.add_argument('--inspect', type=str, help='Only inspect tfrecord in in_file')
     parser.add_argument('--xp', type=str, help='Experimental')
     FLAGS, _ = parser.parse_known_args()
@@ -143,7 +149,7 @@ if __name__ == '__main__':
         for pred, fake in zip(preds, ls):
             print('Tag: {},  filename: {}'.format(pred['tags'][0], fake))
     elif FLAGS.in_file is not None:
-        list_to_tfrecord(FLAGS.in_file, FLAGS.out_file, is_dir=True)
+        list_to_tfrecord(FLAGS.in_file, FLAGS.out_file, is_dir=True, max_files=FLAGS.max_files)
         print('Generated massive tfrec. BOOM!')
 
     if FLAGS.inspect is None and FLAGS.xp is None:
