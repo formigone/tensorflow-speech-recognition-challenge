@@ -116,10 +116,12 @@ def gen_tf_record(input_list, output_file, input_dir='.', sr=16000, no_aug=False
     with python_io.TFRecordWriter(output_file) as writer:
         with open(input_list, 'r') as fh:
             for line in fh:
-                key, filename, label = line.strip().split(' ')
+                key, filename, label, dir = line.strip().split(' ')
                 label = int(label)
                 # output_path = filename.replace('.wav', '')
-                data = load_audio_file(input_dir + '/' + key + '/' + filename)
+                data = load_audio_file(input_dir + '/' + dir + '/' + filename)
+                if total < 100:
+                    print(input_dir + '/' + dir + '/' + filename)
 
                 to_tfrecord(writer, data, label)
                 # save_to_file(output_path + '-org.wav', data)

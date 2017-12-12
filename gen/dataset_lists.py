@@ -14,7 +14,7 @@ def list_classes(path, max_per_class=2500):
             if _label not in files:
                 # files[_label] = 0
                 files[_label] = []
-            files[_label].append(file)
+            files[_label].append((dir, file))
             # files[_label] += 1
 
     with open('train_raw_12.txt', 'w+') as train_out:
@@ -32,12 +32,12 @@ def list_classes(path, max_per_class=2500):
                 label = key
                 if key == 'noise':
                     label = 'silence'
-                for train in train_samples:
+                for dir, train in train_samples:
                     _label = labels.label2int(label, v2=True)
-                    train_out.write('{} {} {}\n'.format(label, train, _label))
-                for test in test_samples:
+                    train_out.write('{} {} {} {}\n'.format(label, train, _label, dir))
+                for dir, test in test_samples:
                     _label = labels.label2int(label, v2=True)
-                    test_out.write('{} {} {}\n'.format(label, test, _label))
+                    test_out.write('{} {} {} {}\n'.format(label, test, _label, dir))
 
 
 if __name__ == '__main__':
