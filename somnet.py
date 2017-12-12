@@ -36,8 +36,6 @@ def get_kernel_weights(layer_name):
 
 
 def model_fn(features, labels, mode, params):
-    print('Features')
-    print(features)
     tf.summary.histogram('features', features)
     tf.summary.audio('features', features, sample_rate=16000, max_outputs=6)
 
@@ -47,6 +45,9 @@ def model_fn(features, labels, mode, params):
     tf.summary.image('features_2', feat_vol_2)
 
     conv1 = tf.layers.conv2d(feat_vol_1, filters=16, kernel_size=5, activation=tf.nn.relu, name='conv1')
+    pool1 = tf.layers.max_pooling2d(conv1, pool_size=[2, 2], strides=2, name='pool1')
+    # (125 - 4) / 2 = 60
+    # (128 - 4) / 2 = 62
     tf.summary.image('conv1', get_kernel_weights('conv1'), max_outputs=16)
 
     # features_complex = tf.cast(features, dtype=tf.complex64)
@@ -55,7 +56,8 @@ def model_fn(features, labels, mode, params):
     # fft_float = tf.cast(fft, dtype=tf.float32)
     # tf.summary.image('fft', fft_float)
 
-    dense = tf.layers.dense(conv1, units=10, activation=tf.nn.relu, name='dense')
+    conv1_flat = tf.reshape(pool1, [-1, 60 * 62 * 16])
+    dense = tf.layers.dense(conv1_flat, units=10, activation=tf.nn.relu, name='dense')
     logits = tf.layers.dense(dense, units=params['num_classes'], name='logits')
     pred_argmax = tf.argmax(logits, axis=1, name='argmax')
     pred_softmax = tf.nn.softmax(logits, name='softmax')
@@ -85,13 +87,13 @@ def model_fn(features, labels, mode, params):
 def main(unparsed_args):
     params = {
         'learning_rate': 1e-3,
-        'num_classes': 3,
+        'num_classes': 4,
     }
     model = tf.estimator.Estimator(model_dir=FLAGS.model_dir, model_fn=model_fn, params=params)
 
     if FLAGS.mode == 'train':
         tf.logging.debug('Training {} on {}'.format(FLAGS.model_dir, FLAGS.input_file))
-        model.train(input_fn=gen_input_fn(FLAGS.input_file))
+        model.train(input_fn=gen_input_fn(FLAGS.input_file, repeat=-1))
 
     elif FLAGS.mode == 'predict':
         tf.logging.debug('Predicting')

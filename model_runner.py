@@ -9,9 +9,9 @@ from util.data import gen_input_fn_tfrecords
 from util.labels import int2label
 
 FLAGS = None
-LEARNING_RATE = 0.0001
+LEARNING_RATE = 1e-2
 DROPOUT_RATE = 0.5
-OUTPUT_CLASSES = 11
+OUTPUT_CLASSES = 12
 tf.logging.set_verbosity(tf.logging.DEBUG)
 
 
@@ -38,6 +38,7 @@ def main(args):
         'learning_rate': LEARNING_RATE,
         'dropout_rate': DROPOUT_RATE,
         'output_classes': OUTPUT_CLASSES,
+        'verbose_summary': FLAGS.verbose_summary,
     }
 
     if FLAGS.model == 'deep':
@@ -56,7 +57,7 @@ def main(args):
     model = tf.estimator.Estimator(model_dir=FLAGS.model_dir, model_fn=model_fn.model_fn, params=model_params)
 
     if FLAGS.mode == 'train':
-        model.train(input_fn=gen_input_fn_tfrecords(FLAGS.input_file, batch_size=FLAGS.batch_size, repeat=10))
+        model.train(input_fn=gen_input_fn_tfrecords(FLAGS.input_file, batch_size=FLAGS.batch_size, repeat=1000))
     elif FLAGS.mode == 'eval':
         model.evaluate(input_fn=gen_input_fn_tfrecords(FLAGS.input_file))
     elif FLAGS.mode == 'predict':
@@ -71,8 +72,9 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, metavar='', help='Must be [simple_cnn|vgg]')
     parser.add_argument('--model_dir', type=str, metavar='', default=None, help='Path to save the model to')
     parser.add_argument('--input_file', type=str, metavar='', help='Path to input file')
-    parser.add_argument('--output_file', type=str, metavar='', help='Path to output file')
+    parser.add_argument('--output_file', type=str, metavar='', help='Path to output file (predict mode only)')
     parser.add_argument('--batch_size', type=int, metavar='', default=16, help='Only used in training')
+    parser.add_argument('--verbose_summary', type=bool, metavar='', default=False, help='Records images and hists')
 
     FLAGS, unparsed = parser.parse_known_args()
 

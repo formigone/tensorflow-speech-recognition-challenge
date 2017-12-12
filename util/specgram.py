@@ -4,9 +4,11 @@ from scipy import signal
 from scipy.io import wavfile
 
 
-def load_audio_file(file_path, sr=16000):
+def load_audio_file(file_path, sr=16000, raw=False):
     data = librosa.core.load(file_path, sr=sr)
     data = data[0]
+    if raw:
+        return data
     return normalize(data, sr)
 
 

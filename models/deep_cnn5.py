@@ -29,7 +29,8 @@ def model_fn(features, labels, mode, params):
     # input = tf.reshape(features['x'], [-1, 99, 161, 1])
     x = tf.reshape(features, [-1, 99, 161, 1], name='input_deep_cnn5')
     x_norm = tf.layers.batch_normalization(x, training=mode == tf.estimator.ModeKeys.TRAIN, name='x_norm')
-    tf.summary.image('input', x)
+    if params['verbose_summary']:
+        tf.summary.image('input', x)
 
     # output: ((n + 2p - f) / s) + 1
     # output: n / 2
@@ -42,31 +43,35 @@ def model_fn(features, labels, mode, params):
     #conv1_kernel = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, 'conv1/kernel')
     #tf.summary.histogram('conv1', conv1_kernel[0])
     #tf.summary.image('conv1', tf.transpose(conv1_kernel[0], perm=[3, 0, 1, 2]), max_outputs=64)
-    tf.summary.image('pool1', pool1[:, :, :, 0:1])
+    if params['verbose_summary']:
+        tf.summary.image('pool1', pool1[:, :, :, 0:1])
 
     conv2 = tf.layers.conv2d(pool1, filters=128, kernel_size=3, activation=tf.nn.relu, name='conv2')
     # (46, 77, 128)
     pool2 = tf.layers.max_pooling2d(conv2, pool_size=[2, 2], strides=2, name='pool2')
     # (23, 38, 128)
-    conv2_kernel = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, 'conv2/kernel')
-    tf.summary.histogram('conv2', conv2_kernel[0])
-    tf.summary.image('pool2', pool2[:, :, :, 0:1])
+    if params['verbose_summary']:
+        conv2_kernel = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, 'conv2/kernel')
+        tf.summary.histogram('conv2', conv2_kernel[0])
+        tf.summary.image('pool2', pool2[:, :, :, 0:1])
 
     conv3 = tf.layers.conv2d(pool2, filters=256, kernel_size=3, activation=tf.nn.relu, name='conv3')
     # (21, 36, 512)
     pool3 = tf.layers.max_pooling2d(conv3, pool_size=[2, 2], strides=2, name='pool3')
     # (10, 18, 512)
-    conv3_kernel = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, 'conv3/kernel')
-    tf.summary.histogram('conv3', conv3_kernel[0])
-    tf.summary.image('pool3', pool3[:, :, :, 0:1])
+    if params['verbose_summary']:
+        conv3_kernel = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, 'conv3/kernel')
+        tf.summary.histogram('conv3', conv3_kernel[0])
+        tf.summary.image('pool3', pool3[:, :, :, 0:1])
 
     conv4 = tf.layers.conv2d(pool3, filters=512, kernel_size=3, activation=tf.nn.relu, name='conv4')
     # (8, 16, 512)
     pool4 = tf.layers.max_pooling2d(conv4, pool_size=[2, 2], strides=2, name='pool4')
     # (4, 8, 512)
-    conv4_kernel = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, 'conv4/kernel')
-    tf.summary.histogram('conv4', conv4_kernel[0])
-    tf.summary.image('pool4', pool4[:, :, :, 0:1])
+    if params['verbose_summary']:
+        conv4_kernel = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, 'conv4/kernel')
+        tf.summary.histogram('conv4', conv4_kernel[0])
+        tf.summary.image('pool4', pool4[:, :, :, 0:1])
 
     pool4_flat = tf.reshape(pool4, [-1, 4 * 8 * 512], name='pool4_flat')
     # (16384)

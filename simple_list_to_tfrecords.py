@@ -8,6 +8,12 @@ import random
 
 
 def list_to_tfrecord(input_file, tfrecord_filename, label_col=-1, is_dir=False, max_files=None):
+    simple_labels = {
+        'up': 0,
+        'down': 1,
+        'left': 2,
+        'right': 3,
+    }
     with python_io.TFRecordWriter(tfrecord_filename) as writer:
         if is_dir:
             # root = 'data_speech_commands_v0.01/test/audio/'
@@ -38,19 +44,19 @@ def list_to_tfrecord(input_file, tfrecord_filename, label_col=-1, is_dir=False, 
                 total_lines = os.popen('wc -l ' + input_file).read().strip()
                 total_lines = total_lines.split(' ')[0]
                 i = 0
-                root = 'data_speech_commands_v0.01'
+                root = 'small_inputs'
                 for line in lines:
                     key, wav = line.strip().split()
                     path = root + '/' + key + '/' + wav
-                    spec = from_file(path)
+                    sound = from_file(path, sound_only=True)
 
-                    if spec.shape != (99, 161):
-                        print('>>> bad file: {} - {}'.format(path, spec.shape))
-                        continue
-                    features = np.asarray(spec.reshape((1, spec.shape[0] * spec.shape[1])), dtype=np.float32)
-                    label = label2int(key)
+                    # if spec.shape != (99, 161):
+                    #     print('>>> bad file: {} - {}'.format(path, spec.shape))
+                    #     continue
+                    features = sound
+                    label = simple_labels[key]
                     example = tf.train.Example()
-                    example.features.feature['x'].float_list.value.extend(features[0])
+                    example.features.feature['x'].float_list.value.extend(features)
                     example.features.feature['y'].int64_list.value.append(label)
                     writer.write(example.SerializeToString())
                     if i % 100 == 0:
@@ -95,7 +101,7 @@ if __name__ == '__main__':
     elif FLAGS.xp == 'use':
         def func(features, labels, mode, params):
             dense = tf.layers.dense(features, units=10, activation=tf.nn.relu)
-            logits = tf.layers.dense(dense, units=3)
+            logits = tf.layers.dense(dense, units=12)
 
             predictions = {
                 'classes': tf.argmax(logits, axis=1),
@@ -106,7 +112,7 @@ if __name__ == '__main__':
             if mode == tf.estimator.ModeKeys.PREDICT:
                 return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
 
-            onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=3)
+            onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=12)
             loss = tf.losses.softmax_cross_entropy(onehot_labels=onehot_labels, logits=logits)
 
             optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
@@ -127,14 +133,14 @@ if __name__ == '__main__':
 
         def parse_function(example_proto):
             features = {
-                'x': tf.FixedLenFeature((4,), tf.float32),
+                'x': tf.FixedLenFeature((99 * 161,), tf.float32),
                 'y': tf.FixedLenFeature((), tf.int64),
             }
             parsed_features = tf.parse_single_example(example_proto, features)
             return parsed_features['x'], parsed_features['y']
 
         def input_fn():
-            dataset = tf.contrib.data.TFRecordDataset(['test.tfr'])
+            dataset = tf.contrib.data.TFRecordDataset(['train_aug_12.tfrecords'])
             dataset = dataset.map(parse_function)
             # dataset = dataset.shuffle(0)
             dataset = dataset.repeat(1)
@@ -149,7 +155,7 @@ if __name__ == '__main__':
         for pred, fake in zip(preds, ls):
             print('Tag: {},  filename: {}'.format(pred['tags'][0], fake))
     elif FLAGS.in_file is not None:
-        list_to_tfrecord(FLAGS.in_file, FLAGS.out_file, is_dir=True, max_files=FLAGS.max_files)
+        list_to_tfrecord(FLAGS.in_file, FLAGS.out_file, max_files=FLAGS.max_files)
         print('Generated massive tfrec. BOOM!')
 
     if FLAGS.inspect is None and FLAGS.xp is None:
