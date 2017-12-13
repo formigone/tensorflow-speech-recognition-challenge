@@ -4,7 +4,7 @@ import os
 
 import numpy as np
 import tensorflow as tf
-from models import trivial_cnn, deep_cnn, deep_cnn2, deep_cnn3, deep_cnn4, deep_cnn5
+from models import trivial_cnn, deep_cnn, deep_cnn2, deep_cnn3, deep_cnn4, deep_cnn5, deep_cnn6
 from util.data import gen_input_fn_tfrecords
 from util.labels import int2label
 
@@ -51,6 +51,8 @@ def main(args):
         model_fn = deep_cnn4
     elif FLAGS.model == 'deep-v5':
         model_fn = deep_cnn5
+    elif FLAGS.model == 'deep-v6':
+        model_fn = deep_cnn6
     else:
         model_fn = trivial_cnn
 
