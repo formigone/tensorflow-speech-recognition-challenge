@@ -121,7 +121,7 @@ def gen_tf_record(input_list, output_file, input_dir='.', sr=16000, no_aug=False
                 # output_path = filename.replace('.wav', '')
                 data = load_audio_file(input_dir + '/' + dir + '/' + filename)
                 if total < 100:
-                    print(input_dir + '/' + dir + '/' + filename)
+                    print('{}/{}/{}  => {}'.format(input_dir, dir, filename, label))
 
                 to_tfrecord(writer, data, label)
                 # save_to_file(output_path + '-org.wav', data)

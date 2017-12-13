@@ -57,7 +57,12 @@ def main(args):
     model = tf.estimator.Estimator(model_dir=FLAGS.model_dir, model_fn=model_fn.model_fn, params=model_params)
 
     if FLAGS.mode == 'train':
-        model.train(input_fn=gen_input_fn_tfrecords(FLAGS.input_file, batch_size=FLAGS.batch_size, repeat=1000))
+        model.train(input_fn=gen_input_fn_tfrecords(
+            FLAGS.input_file,
+            batch_size=FLAGS.batch_size,
+            shuffle_size=FLAGS.shuffle_size,
+            repeat=50)
+        )
     elif FLAGS.mode == 'eval':
         model.evaluate(input_fn=gen_input_fn_tfrecords(FLAGS.input_file))
     elif FLAGS.mode == 'predict':
@@ -74,6 +79,7 @@ if __name__ == '__main__':
     parser.add_argument('--input_file', type=str, metavar='', help='Path to input file')
     parser.add_argument('--output_file', type=str, metavar='', help='Path to output file (predict mode only)')
     parser.add_argument('--batch_size', type=int, metavar='', default=16, help='Only used in training')
+    parser.add_argument('--shuffle_size', type=int, metavar='', default=256, help='TFRecordDataset shuffle buffer')
     parser.add_argument('--verbose_summary', type=bool, metavar='', default=False, help='Records images and hists')
 
     FLAGS, unparsed = parser.parse_known_args()
