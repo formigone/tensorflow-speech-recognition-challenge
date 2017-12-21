@@ -5,7 +5,9 @@ import time
 
 import numpy as np
 import tensorflow as tf
+from cloud_models import incep12_model, incep7_model, incep10_model, incep13_model
 from models import trivial_cnn, deep_cnn, deep_cnn2, deep_cnn3, deep_cnn4, deep_cnn5, deep_cnn6
+
 from util.data import gen_input_fn_tfrecords
 from util.labels import int2label
 
@@ -40,6 +42,7 @@ def main(args):
         'learning_rate': LEARNING_RATE,
         'dropout_rate': DROPOUT_RATE,
         'output_classes': OUTPUT_CLASSES,
+        'num_classes': OUTPUT_CLASSES,
         'verbose_summary': FLAGS.verbose_summary,
     }
 
@@ -55,6 +58,14 @@ def main(args):
         model_fn = deep_cnn5
     elif FLAGS.model == 'deep-v6':
         model_fn = deep_cnn6
+    elif FLAGS.model == 'cm_incep12':
+        model_fn = incep12_model
+    elif FLAGS.model == 'cm_incep7':
+        model_fn = incep7_model
+    elif FLAGS.model == 'cm_incep10':
+        model_fn = incep10_model
+    elif FLAGS.model == 'cm_incep13':
+        model_fn = incep13_model
     else:
         model_fn = trivial_cnn
 
