@@ -1,6 +1,7 @@
 import argparse
 import sys
 import os
+import time
 
 import numpy as np
 import tensorflow as tf
@@ -9,7 +10,7 @@ from util.data import gen_input_fn_tfrecords
 from util.labels import int2label
 
 FLAGS = None
-LEARNING_RATE = 1e-2
+LEARNING_RATE = 1e-1
 DROPOUT_RATE = 0.5
 OUTPUT_CLASSES = 12
 tf.logging.set_verbosity(tf.logging.DEBUG)
@@ -17,7 +18,7 @@ tf.logging.set_verbosity(tf.logging.DEBUG)
 
 def predict(model):
     tf.logging.debug('Generating predictions...')
-    predictions = model.predict(input_fn=gen_input_fn_tfrecords(FLAGS.input_file, repeat=1))
+    predictions = model.predict(input_fn=gen_input_fn_tfrecords(FLAGS.input_file, repeat=1, batch_size=FLAGS.batch_size))
     tf.logging.debug('Got predictions')
     files = os.listdir('data_speech_commands_v0.01/test/audio')
     tf.logging.debug('Got list of files to label')
@@ -28,7 +29,8 @@ def predict(model):
             label = int2label(np.argmax(pred['predictions']))
             out_fh.write('{},{}\n'.format(filename, label))
             if i % 1000 == 0:
-                tf.logging.debug('file {}: {} (iteration {})'.format(filename, label, i))
+                now = time.localtime(time.time())
+                tf.logging.debug('file {}: {} (iteration {}, {})'.format(filename, label, i, time.strftime('%H:%M:%S', now)))
             i += 1
     print('Saved predictions to {}'.format(FLAGS.output_file))
 
@@ -59,6 +61,7 @@ def main(args):
     model = tf.estimator.Estimator(model_dir=FLAGS.model_dir, model_fn=model_fn.model_fn, params=model_params)
 
     if FLAGS.mode == 'train':
+        tf.logging.debug('Settings: {}'.format({'batch_size': FLAGS.batch_size, 'shuffle_size': FLAGS.shuffle_size}))
         model.train(input_fn=gen_input_fn_tfrecords(
             FLAGS.input_file,
             batch_size=FLAGS.batch_size,
@@ -66,7 +69,13 @@ def main(args):
             repeat=50)
         )
     elif FLAGS.mode == 'eval':
-        model.evaluate(input_fn=gen_input_fn_tfrecords(FLAGS.input_file))
+        tf.logging.debug('Settings: {}'.format({'batch_size': FLAGS.batch_size, 'shuffle_size': FLAGS.shuffle_size}))
+        model.evaluate(input_fn=gen_input_fn_tfrecords(
+           FLAGS.input_file, 
+           batch_size=FLAGS.batch_size, 
+           shuffle_size=FLAGS.shuffle_size, 
+           repeat=1)
+        )
     elif FLAGS.mode == 'predict':
         predict(model)
     else:
