@@ -5,7 +5,8 @@ import time
 
 import numpy as np
 import tensorflow as tf
-from cloud_models import incep12_model, incep7_model, incep10_model, incep13_model, incep10v2, stric_conv2_model
+from cloud_models import incep12_model, incep7_model, incep10_model, incep13_model, incep10v2,\
+    stric_conv2_model, stric_conv3_model, incep10v4, incep7v2_model
 from models import trivial_cnn, deep_cnn, deep_cnn2, deep_cnn3, deep_cnn4, deep_cnn5, deep_cnn6
 
 from util.data import gen_input_fn_tfrecords
@@ -62,14 +63,20 @@ def main(args):
         model_fn = incep12_model
     elif FLAGS.model == 'cm_incep7':
         model_fn = incep7_model
+    elif FLAGS.model == 'incep7v2_model':
+        model_fn = incep7v2_model
     elif FLAGS.model == 'cm_incep10':
         model_fn = incep10_model
     elif FLAGS.model == 'cm_incep13':
         model_fn = incep13_model
     elif FLAGS.model == 'cm_incep10v2':
         model_fn = incep10v2
+    elif FLAGS.model == 'cm_incep10v4':
+        model_fn = incep10v4
     elif FLAGS.model == 'cm_stric_conv2':
         model_fn = stric_conv2_model
+    elif FLAGS.model == 'cm_stric_conv3':
+        model_fn = stric_conv3_model
     else:
         model_fn = trivial_cnn
 
