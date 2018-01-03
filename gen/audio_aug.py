@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import librosa
 import matplotlib.pyplot as plt
 import argparse
@@ -119,8 +120,11 @@ def gen_tf_record(input_list, output_file, input_dir='.', sr=16000, no_aug=False
                 key, filename, label, dir = line.strip().split(' ')
                 label = int(label)
                 # output_path = filename.replace('.wav', '')
-                data = load_audio_file(input_dir + '/' + dir + '/' + filename)
-                if total < 100:
+                file = input_dir + '/' + dir + '/' + filename
+                if not os.path.isfile(file):
+                    continue
+                data = load_audio_file(file)
+                if total < 500:
                     print('{}/{}/{}  => {}'.format(input_dir, dir, filename, label))
 
                 to_tfrecord(writer, data, label)
@@ -128,56 +132,66 @@ def gen_tf_record(input_list, output_file, input_dir='.', sr=16000, no_aug=False
                 # save_to_file(output_path + '-org.png', data, out_format='img')
 
                 if not no_aug:
-                    wn = filter_white_noise(data)
-                    to_tfrecord(writer, wn, label)
-                    # save_to_file(output_path + '-wn.wav', wn)
-                    # save_to_file(output_path + '-wn.png', wn, out_format='img')
+                    for amount in [0.001, 0.003, 0.006, 0.009, 0.012]:
+                        wn = filter_white_noise(data, amount=amount)
+                        to_tfrecord(writer, wn, label)
+                        # save_to_file(output_path + '-wn.wav', wn)
+                        # save_to_file(output_path + '-wn.png', wn, out_format='img')
 
-                    wn2 = filter_white_noise(np.zeros(data.shape))
-                    wn2 = filter_slow(wn2, sr, 0.25)
-                    wn2 = data + wn2
-                    to_tfrecord(writer, wn2, label)
-                    # save_to_file(output_path + '-wn2.wav', wn2)
-                    # save_to_file(output_path + '-wn2.png', wn2, out_format='img')
+                    for rate in [0.01, 0.03, 0.06, 0.09, 0.12]:
+                        wn2 = filter_white_noise(np.zeros(data.shape))
+                        wn2 = filter_slow(wn2, sr, rate)
+                        wn2 = data + wn2
+                        to_tfrecord(writer, wn2, label)
+                        # save_to_file(output_path + '-wn2.wav', wn2)
+                        # save_to_file(output_path + '-wn2.png', wn2, out_format='img')
 
-                    quiet = filter_quiet(data, amount=-0.5)
-                    quiet = filter_quiet(quiet, amount=-0.5)
-                    to_tfrecord(writer, quiet, label)
-                    # save_to_file(output_path + '-quiet.wav', quiet)
-                    # save_to_file(output_path + '-quiet.png', quiet, out_format='img')
+                    for amount in [-0.1, -0.25, -0.5, -0.75]:
+                        quiet = filter_quiet(data, amount=amount)
+                        quiet = filter_quiet(quiet, amount=amount)
+                        to_tfrecord(writer, quiet, label)
+                        # save_to_file(output_path + '-quiet.wav', quiet)
+                        # save_to_file(output_path + '-quiet.png', quiet, out_format='img')
 
-                    loud = filter_quiet(data, amount=108)
-                    to_tfrecord(writer, loud, label)
-                    # save_to_file(output_path + '-loud.wav', loud)
-                    # save_to_file(output_path + '-loud.png', loud, out_format='img')
+                    for amount in [25, 50, 75, 100, 125]:
+                        loud = filter_quiet(data, amount=amount)
+                        to_tfrecord(writer, loud, label)
+                        # save_to_file(output_path + '-loud.wav', loud)
+                        # save_to_file(output_path + '-loud.png', loud, out_format='img')
 
-                    roll = filter_roll(data, amount=2000)
-                    to_tfrecord(writer, roll, label)
-                    # save_to_file(output_path + '-roll.wav', roll)
-                    # save_to_file(output_path + '-roll.png', roll, out_format='img')
+                    for amount in [1000, 1500, 2000, 2500]:
+                        roll = filter_roll(data, amount=amount)
+                        to_tfrecord(writer, roll, label)
+                        # save_to_file(output_path + '-roll.wav', roll)
+                        # save_to_file(output_path + '-roll.png', roll, out_format='img')
 
-                    wn2 = filter_white_noise(np.zeros(data.shape))
-                    wn2 = filter_slow(wn2, sr, 0.5)
-                    roll2 = filter_roll(data, amount=2000) + wn2
-                    to_tfrecord(writer, roll2, label)
-                    # save_to_file(output_path + '-roll2.wav', roll2)
-                    # save_to_file(output_path + '-roll2.png', roll2, out_format='img')
+                    for amount in [1000, 1500, 2000, 2500]:
+                        for slow in [0.1, 0.25, 0.5, 0.75]:
+                            wn2 = filter_white_noise(np.zeros(data.shape))
+                            wn2 = filter_slow(wn2, sr, slow)
+                            roll2 = filter_roll(data, amount=amount) + wn2
+                            to_tfrecord(writer, roll2, label)
+                            # save_to_file(output_path + '-roll2.wav', roll2)
+                            # save_to_file(output_path + '-roll2.png', roll2, out_format='img')
 
-                    short = filter_slow(data, sr, 1.15)
-                    short = filter_stretch(data, rate=0.9) + short * 0.002
-                    to_tfrecord(writer, short, label)
-                    # save_to_file(output_path + '-short.wav', short)
-                    # save_to_file(output_path + '-short.png', short, out_format='img')
+                    for amount in [0.3, 0.6, 0.9, 1.2]:
+                        short = filter_slow(data, sr, 1.15)
+                        short = filter_stretch(data, rate=amount) + short * 0.002
+                        to_tfrecord(writer, short, label)
+                        # save_to_file(output_path + '-short.wav', short)
+                        # save_to_file(output_path + '-short.png', short, out_format='img')
 
-                    deep = filter_slow(data, sr, 0.85)
-                    to_tfrecord(writer, deep, label)
-                    # save_to_file(output_path + '-deep.wav', deep)
-                    # save_to_file(output_path + '-deep.png', deep, out_format='img')
+                    for amount in [0.7, 0.8, 0.9]:
+                        deep = filter_slow(data, sr, amount)
+                        to_tfrecord(writer, deep, label)
+                        # save_to_file(output_path + '-deep.wav', deep)
+                        # save_to_file(output_path + '-deep.png', deep, out_format='img')
 
-                    long = filter_stretch(data, rate=0.8)
-                    to_tfrecord(writer, long, label)
-                    # save_to_file(output_path + '-long.wav', long)
-                    # save_to_file(output_path + '-long.png', long, out_format='img')
+                    for amount in [0.7, 0.8, 0.9]:
+                        long = filter_stretch(data, rate=amount)
+                        to_tfrecord(writer, long, label)
+                        # save_to_file(output_path + '-long.wav', long)
+                        # save_to_file(output_path + '-long.png', long, out_format='img')
                 total += 1
                 if total % 250 == 0:
                     print(' > {}'.format(total))

@@ -6,7 +6,7 @@ import time
 import numpy as np
 import tensorflow as tf
 from cloud_models import incep12_model, incep7_model, incep10_model, incep13_model, incep10v2,\
-    stric_conv2_model, stric_conv3_model, incep10v4, incep7v2_model
+    stric_conv2_model, stric_conv3_model, incep10v4, incep7v2_model, incep9_model, incep10v7
 from models import trivial_cnn, deep_cnn, deep_cnn2, deep_cnn3, deep_cnn4, deep_cnn5, deep_cnn6
 
 from util.data import gen_input_fn_tfrecords
@@ -14,7 +14,6 @@ from util.labels import int2label
 
 FLAGS = None
 LEARNING_RATE = 1e-1
-DROPOUT_RATE = 0.5
 OUTPUT_CLASSES = 12
 tf.logging.set_verbosity(tf.logging.DEBUG)
 
@@ -39,6 +38,7 @@ def predict(model):
 
 
 def main(args):
+    DROPOUT_RATE = FLAGS.dropout
     model_params = {
         'learning_rate': LEARNING_RATE,
         'dropout_rate': DROPOUT_RATE,
@@ -67,12 +67,16 @@ def main(args):
         model_fn = incep7v2_model
     elif FLAGS.model == 'cm_incep10':
         model_fn = incep10_model
+    elif FLAGS.model == 'cm_incep9':
+        model_fn = incep9_model
     elif FLAGS.model == 'cm_incep13':
         model_fn = incep13_model
     elif FLAGS.model == 'cm_incep10v2':
         model_fn = incep10v2
     elif FLAGS.model == 'cm_incep10v4':
         model_fn = incep10v4
+    elif FLAGS.model == 'incep10v7':
+        model_fn = incep10v7
     elif FLAGS.model == 'cm_stric_conv2':
         model_fn = stric_conv2_model
     elif FLAGS.model == 'cm_stric_conv3':
@@ -113,6 +117,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_file', type=str, metavar='', help='Path to output file (predict mode only)')
     parser.add_argument('--batch_size', type=int, metavar='', default=16, help='Only used in training')
     parser.add_argument('--shuffle_size', type=int, metavar='', default=256, help='TFRecordDataset shuffle buffer')
+    parser.add_argument('--dropout', type=float, metavar='', default=0.5, help='Dropout rate')
     parser.add_argument('--verbose_summary', type=bool, metavar='', default=False, help='Records images and hists')
 
     FLAGS, unparsed = parser.parse_known_args()

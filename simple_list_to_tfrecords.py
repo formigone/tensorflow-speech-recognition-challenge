@@ -7,7 +7,7 @@ import os
 import random
 
 
-def list_to_tfrecord(input_file, tfrecord_filename, label_col=-1, is_dir=False, max_files=None):
+def list_to_tfrecord(input_file, tfrecord_filename, label_col=-1, is_dir=False):
     simple_labels = {
         'up': 0,
         'down': 1,
@@ -44,29 +44,29 @@ def list_to_tfrecord(input_file, tfrecord_filename, label_col=-1, is_dir=False, 
                 total_lines = os.popen('wc -l ' + input_file).read().strip()
                 total_lines = total_lines.split(' ')[0]
                 i = 0
-                root = 'small_inputs'
+                root = 'data_speech_commands_v0.01'
                 for line in lines:
-                    key, wav = line.strip().split()
-                    path = root + '/' + key + '/' + wav
+                    key, wav, label, path = line.strip().split()
+                    path = root + '/' + path + '/' + wav
                     sound = from_file(path, sound_only=True)
 
                     # if spec.shape != (99, 161):
                     #     print('>>> bad file: {} - {}'.format(path, spec.shape))
                     #     continue
                     features = sound
-                    label = simple_labels[key]
+                    # label = simple_labels[key]
                     example = tf.train.Example()
                     example.features.feature['x'].float_list.value.extend(features)
-                    example.features.feature['y'].int64_list.value.append(label)
+                    example.features.feature['y'].int64_list.value.append(int(label))
                     writer.write(example.SerializeToString())
-                    if i % 100 == 0:
-                        print(str(i) + '/' + str(total_lines))
+                    if i % 500 == 0:
+                        print(str(i) + '/' + str(total_lines) + ' => ' + str(len(features)))
                     i += 1
 
 
 def parse_function(example_proto):
     features = {
-        'x': tf.FixedLenFeature((99 * 161,), tf.float32),
+        'x': tf.FixedLenFeature((16000,), tf.float32),
         'y': tf.FixedLenFeature((), tf.int64)
     }
     parsed_features = tf.parse_single_example(example_proto, features)
@@ -79,7 +79,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--in_file', type=str, help='Path to input file')
     parser.add_argument('--out_file', type=str, help='Path to output file')
-    parser.add_argument('--max_files', type=int, help='Max files in file')
     parser.add_argument('--inspect', type=str, help='Only inspect tfrecord in in_file')
     parser.add_argument('--xp', type=str, help='Experimental')
     FLAGS, _ = parser.parse_known_args()
@@ -155,7 +154,7 @@ if __name__ == '__main__':
         for pred, fake in zip(preds, ls):
             print('Tag: {},  filename: {}'.format(pred['tags'][0], fake))
     elif FLAGS.in_file is not None:
-        list_to_tfrecord(FLAGS.in_file, FLAGS.out_file, max_files=FLAGS.max_files)
+        list_to_tfrecord(FLAGS.in_file, FLAGS.out_file)
         print('Generated massive tfrec. BOOM!')
 
     if FLAGS.inspect is None and FLAGS.xp is None:

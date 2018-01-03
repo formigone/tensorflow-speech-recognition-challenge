@@ -5,3 +5,7 @@ data_speech_commands_v0.01
 __pycache__
 img/
 inputs/
+cloud_models/
+!/cloud_models/*.py
+model_dirs
+submissions
