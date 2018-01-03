@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import time
 import librosa
 import matplotlib.pyplot as plt
 import argparse
@@ -124,9 +125,6 @@ def gen_tf_record(input_list, output_file, input_dir='.', sr=16000, no_aug=False
                 if not os.path.isfile(file):
                     continue
                 data = load_audio_file(file)
-                if total < 500:
-                    print('{}/{}/{}  => {}'.format(input_dir, dir, filename, label))
-
                 to_tfrecord(writer, data, label)
                 # save_to_file(output_path + '-org.wav', data)
                 # save_to_file(output_path + '-org.png', data, out_format='img')
@@ -138,7 +136,7 @@ def gen_tf_record(input_list, output_file, input_dir='.', sr=16000, no_aug=False
                         # save_to_file(output_path + '-wn.wav', wn)
                         # save_to_file(output_path + '-wn.png', wn, out_format='img')
 
-                    for rate in [0.01, 0.03, 0.06, 0.09, 0.12]:
+                    for rate in [0.03, 0.06, 0.09, 0.12]:
                         wn2 = filter_white_noise(np.zeros(data.shape))
                         wn2 = filter_slow(wn2, sr, rate)
                         wn2 = data + wn2
@@ -146,27 +144,27 @@ def gen_tf_record(input_list, output_file, input_dir='.', sr=16000, no_aug=False
                         # save_to_file(output_path + '-wn2.wav', wn2)
                         # save_to_file(output_path + '-wn2.png', wn2, out_format='img')
 
-                    for amount in [-0.1, -0.25, -0.5, -0.75]:
+                    for amount in [-0.25, -0.5, -0.75]:
                         quiet = filter_quiet(data, amount=amount)
                         quiet = filter_quiet(quiet, amount=amount)
                         to_tfrecord(writer, quiet, label)
                         # save_to_file(output_path + '-quiet.wav', quiet)
                         # save_to_file(output_path + '-quiet.png', quiet, out_format='img')
 
-                    for amount in [25, 50, 75, 100, 125]:
+                    for amount in [33, 66, 99, 120]:
                         loud = filter_quiet(data, amount=amount)
                         to_tfrecord(writer, loud, label)
                         # save_to_file(output_path + '-loud.wav', loud)
                         # save_to_file(output_path + '-loud.png', loud, out_format='img')
 
-                    for amount in [1000, 1500, 2000, 2500]:
+                    for amount in [1500, 2000, 2500]:
                         roll = filter_roll(data, amount=amount)
                         to_tfrecord(writer, roll, label)
                         # save_to_file(output_path + '-roll.wav', roll)
                         # save_to_file(output_path + '-roll.png', roll, out_format='img')
 
-                    for amount in [1000, 1500, 2000, 2500]:
-                        for slow in [0.1, 0.25, 0.5, 0.75]:
+                    for amount in [1500, 2000, 2500]:
+                        for slow in [0.25, 0.5, 0.75]:
                             wn2 = filter_white_noise(np.zeros(data.shape))
                             wn2 = filter_slow(wn2, sr, slow)
                             roll2 = filter_roll(data, amount=amount) + wn2
@@ -174,7 +172,7 @@ def gen_tf_record(input_list, output_file, input_dir='.', sr=16000, no_aug=False
                             # save_to_file(output_path + '-roll2.wav', roll2)
                             # save_to_file(output_path + '-roll2.png', roll2, out_format='img')
 
-                    for amount in [0.3, 0.6, 0.9, 1.2]:
+                    for amount in [0.25, 0.5, 0.75]:
                         short = filter_slow(data, sr, 1.15)
                         short = filter_stretch(data, rate=amount) + short * 0.002
                         to_tfrecord(writer, short, label)
@@ -192,9 +190,10 @@ def gen_tf_record(input_list, output_file, input_dir='.', sr=16000, no_aug=False
                         to_tfrecord(writer, long, label)
                         # save_to_file(output_path + '-long.wav', long)
                         # save_to_file(output_path + '-long.png', long, out_format='img')
+                if total % 500 == 0:
+                    now = time.asctime( time.localtime(time.time()) )
+                    print('{} - {}   {}/{}/{}  => {}'.format(now, total, input_dir, dir, filename, label))
                 total += 1
-                if total % 250 == 0:
-                    print(' > {}'.format(total))
 
 
 if __name__ == '__main__':
