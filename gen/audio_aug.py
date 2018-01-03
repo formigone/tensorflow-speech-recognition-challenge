@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import time
 import librosa
 import matplotlib.pyplot as plt
 import argparse
@@ -101,14 +102,33 @@ def save_to_file(filename, data, sr=16000, out_format='wav'):
 
 def to_tfrecord(writer, x, y, sr=16000):
   x = specgram.normalize(x, sr)
-  x = specgram.log_specgram(x, sr)
+  x = stacks(x, sr)
   x = x.reshape(-1)
+
   features = np.asarray(x, dtype=np.float32)
   label = y
   example = tf.train.Example()
   example.features.feature['x'].float_list.value.extend(features)
   example.features.feature['y'].int64_list.value.append(label)
   writer.write(example.SerializeToString())
+
+
+def stacks(freqs, sr, out_shape=(125, 161)):
+  spec = specgram.log_specgram(freqs, sr)
+  result = np.full(out_shape, np.min(spec))
+  result[:spec.shape[0], :spec.shape[1]] = spec
+  spec = result
+
+  wav = freqs.reshape((125, 128))
+  result = np.full(out_shape, np.max(wav))
+  result[:wav.shape[0], :wav.shape[1]] = wav
+  wav = result
+
+  z = np.zeros((125, 161, 2))
+  z[:, :, 0] = spec
+  z[:, :, 1] = wav
+
+  return z
 
 
 def gen_tf_record(input_list, output_file, input_dir='.', sr=16000, no_aug=False):
@@ -123,19 +143,18 @@ def gen_tf_record(input_list, output_file, input_dir='.', sr=16000, no_aug=False
         file = input_dir + '/' + dir + '/' + filename
         if not os.path.isfile(file):
           continue
+
         data = load_audio_file(file)
-        save_to_file(file + '-org.png', data, out_format='img')
-        print(file + '-org.png')
-        break
         to_tfrecord(writer, data, label)
         # save_to_file(output_path + '-org.wav', data)
         # save_to_file(output_path + '-org.png', data, out_format='img')
 
         if not no_aug:
-          wn = filter_white_noise(data)
-          to_tfrecord(writer, wn, label)
-          # save_to_file(output_path + '-wn.wav', wn)
-          # save_to_file(output_path + '-wn.png', wn, out_format='img')
+          for amount in [0.001, 0.005, 0.01]:
+            wn = filter_white_noise(data, amount=amount)
+            to_tfrecord(writer, wn, label)
+            # save_to_file(output_path + '-wn.wav', wn)
+            # save_to_file(output_path + '-wn.png', wn, out_format='img')
 
           wn2 = filter_white_noise(np.zeros(data.shape))
           wn2 = filter_slow(wn2, sr, 0.25)
@@ -173,17 +192,20 @@ def gen_tf_record(input_list, output_file, input_dir='.', sr=16000, no_aug=False
           # save_to_file(output_path + '-short.wav', short)
           # save_to_file(output_path + '-short.png', short, out_format='img')
 
-          deep = filter_slow(data, sr, 0.85)
-          to_tfrecord(writer, deep, label)
-          # save_to_file(output_path + '-deep.wav', deep)
-          # save_to_file(output_path + '-deep.png', deep, out_format='img')
+          for rate in [0.7, 0.8, 0.9]:
+            deep = filter_slow(data, sr, rate=rate)
+            to_tfrecord(writer, deep, label)
+            # save_to_file(output_path + '-deep.wav', deep)
+            # save_to_file(output_path + '-deep.png', deep, out_format='img')
 
-          long = filter_stretch(data, rate=0.8)
-          to_tfrecord(writer, long, label)
-          # save_to_file(output_path + '-long.wav', long)
-          # save_to_file(output_path + '-long.png', long, out_format='img')
+          for rate in [0.7, 0.8, 0.9]:
+            long = filter_stretch(data, rate=rate)
+            to_tfrecord(writer, long, label)
+            # save_to_file(output_path + '-long.wav', long)
+            # save_to_file(output_path + '-long.png', long, out_format='img')
         if total % 250 == 0:
-          print('{}  {}/{}/{}  => {}'.format(total, input_dir, dir, filename, label))
+          now = time.asctime(time.localtime(time.time()))
+          print('{} => {}  {}/{}/{}  => {}'.format(now, total, input_dir, dir, filename, label))
         total += 1
 
 
