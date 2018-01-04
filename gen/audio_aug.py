@@ -142,6 +142,7 @@ def gen_tf_record(input_list, output_file, input_dir='.', sr=16000, no_aug=False
         # output_path = filename.replace('.wav', '')
         file = input_dir + '/' + dir + '/' + filename
         if not os.path.isfile(file):
+          print('File not found {}'.format(file))
           continue
 
         data = load_audio_file(file)
@@ -223,4 +224,5 @@ if __name__ == '__main__':
   parser.add_argument('--no_aug', type=bool, default=False, help='No data augmentation per file')
   FLAGS, _ = parser.parse_known_args()
 
+  print('With data augmentation: {}'.format(not FLAGS.no_aug))
   gen_tf_record(FLAGS.input_file, FLAGS.output_file, FLAGS.input_dir, no_aug=FLAGS.no_aug)
